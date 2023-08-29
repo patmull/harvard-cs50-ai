@@ -1,7 +1,7 @@
 """
 Tic Tac Toe Player
 """
-
+import copy
 import math
 
 X = "X"
@@ -51,21 +51,55 @@ def actions(board):
     """
     Returns set of all possible actions (i, j) available on the board.
     """
-    raise NotImplementedError
+    all_possible_actions = set()
+
+    if terminal(board):
+        return
+
+    for i in board():
+        for j in board():
+            if board[i][j] != X and board[i][j] != O:
+                all_possible_actions.add((i, j))
+
+    return all_possible_actions
 
 
 def result(board, action):
     """
     Returns the board that results from making move (i, j) on the board.
     """
-    raise NotImplementedError
+    if type(action) != tuple:
+        raise ValueError
+
+    if type(action[0]) != int or type(action[1]) != int:
+        raise ValueError
+
+    # Just to make it clear that the original should be left unmodified
+    new_board = copy.deepcopy(board)
+    new_board[action[0]][action[1]] = player(board)
+
+    raise new_board
 
 
 def winner(board):
     """
     Returns the winner of the game, if there is one.
     """
-    raise NotImplementedError
+
+    num_of_consecutive_signs = 0
+    last_sign = ""
+    for row in board():
+        for sign in row:
+            if sign == last_sign:
+                num_of_consecutive_signs += 1
+            last_sign = sign
+
+    # TODO: Add another options for the winners
+
+    if num_of_consecutive_signs == 3:
+        return player(board)
+    else:
+        return None
 
 
 def terminal(board):
