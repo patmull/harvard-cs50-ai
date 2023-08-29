@@ -88,6 +88,8 @@ def winner(board):
 
     num_of_consecutive_signs = 0
     last_sign = ""
+
+    # Vertical
     for row in board():
         for sign in row:
             if sign == last_sign:
@@ -95,25 +97,57 @@ def winner(board):
             last_sign = sign
 
     # TODO: Add another options for the winners
+    max_vertical_index = len(board())
+
+    # Horizontal
+    last_sign = ""
+    for horizontal_index in range(board()[0]):
+        if board()[horizontal_index] == last_sign:
+            num_of_consecutive_signs += 1
+        horizontal_index += 1
+        last_sign = board()[horizontal_index]
+
+    # Diagonal
+    if (board[0][0] == board[1][1] == board[2][2]) or (board[0][2] == board[1][1] == board[2][0]):
+        return player(board)
 
     if num_of_consecutive_signs == 3:
         return player(board)
     else:
-        return None
+        return False
 
 
 def terminal(board):
     """
     Returns True if game is over, False otherwise.
     """
-    raise NotImplementedError
+
+    def only_empty(actual_board):
+        for row in actual_board:
+            for sign in row:
+                if sign is not None:
+                    return False
+
+        return True
+
+    if winner(board) or only_empty(board):
+        return True
+    else:
+        return False
 
 
 def utility(board):
     """
     Returns 1 if X has won the game, -1 if O has won, 0 otherwise.
     """
-    raise NotImplementedError
+    if winner(board):
+        if winner(board) == X:
+            return 1
+
+        if winner(board) == O:
+            return -1
+    else:
+        return 0
 
 
 def minimax(board):
