@@ -113,7 +113,11 @@ while True:
             if ai_turn:
                 time.sleep(0.5)
                 move = ttt.minimax(board)
+                print("move:")
+                print(move)
                 board = ttt.result(board, move)
+                print("board:")
+                print(board)
                 ai_turn = False
             else:
                 ai_turn = True
@@ -124,7 +128,7 @@ while True:
             mouse = pygame.mouse.get_pos()
             for i in range(3):
                 for j in range(3):
-                    if (board[i][j] == ttt.EMPTY and tiles[i][j].collidepoint(mouse)):
+                    if board[i][j] == ttt.EMPTY and tiles[i][j].collidepoint(mouse):
                         board = ttt.result(board, (i, j))
 
         if game_over:

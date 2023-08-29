@@ -3,6 +3,7 @@ Tic Tac Toe Player
 """
 import copy
 import math
+import sys
 
 X = "X"
 O = "O"
@@ -56,9 +57,9 @@ def actions(board):
     if terminal(board):
         return
 
-    for i in board():
-        for j in board():
-            if board[i][j] != X and board[i][j] != O:
+    for i, item in enumerate(board):
+        for j, jtem in enumerate(item):
+            if j != X and j != O:
                 all_possible_actions.add((i, j))
 
     return all_possible_actions
@@ -68,7 +69,10 @@ def result(board, action):
     """
     Returns the board that results from making move (i, j) on the board.
     """
-    if type(action) != tuple:
+    print("action type:")
+    print(action)
+    print(type(action))
+    if not isinstance(action, tuple):
         raise ValueError
 
     if type(action[0]) != int or type(action[1]) != int:
@@ -78,7 +82,7 @@ def result(board, action):
     new_board = copy.deepcopy(board)
     new_board[action[0]][action[1]] = player(board)
 
-    raise new_board
+    return new_board
 
 
 def winner(board):
@@ -90,31 +94,32 @@ def winner(board):
     last_sign = ""
 
     # Vertical
-    for row in board():
+    for row in board:
         for sign in row:
             if sign == last_sign:
                 num_of_consecutive_signs += 1
             last_sign = sign
 
     # TODO: Add another options for the winners
-    max_vertical_index = len(board())
+    max_vertical_index = len(board)
 
     # Horizontal
     last_sign = ""
-    for horizontal_index in range(board()[0]):
-        if board()[horizontal_index] == last_sign:
+    for horizontal_index in range(len(board) - 1):
+        if board[horizontal_index] == last_sign:
             num_of_consecutive_signs += 1
         horizontal_index += 1
-        last_sign = board()[horizontal_index]
+        last_sign = board[horizontal_index]
 
     # Diagonal
-    if (board[0][0] == board[1][1] == board[2][2]) or (board[0][2] == board[1][1] == board[2][0]):
+    if ((board[0][0] == board[1][1] == board[2][2] == X) or (board[0][0] == board[1][1] == board[2][2] == O)
+            or (board[0][2] == board[1][1] == board[2][0] == X) or (board[0][2] == board[1][1] == board[2][0] == O)):
         return player(board)
 
     if num_of_consecutive_signs == 3:
         return player(board)
     else:
-        return False
+        return None
 
 
 def terminal(board):
@@ -122,15 +127,15 @@ def terminal(board):
     Returns True if game is over, False otherwise.
     """
 
-    def only_empty(actual_board):
+    def full_board_filled(actual_board):
         for row in actual_board:
             for sign in row:
-                if sign is not None:
+                if sign is None:
                     return False
 
         return True
 
-    if winner(board) or only_empty(board):
+    if winner(board) or full_board_filled(board):
         return True
     else:
         return False
@@ -154,4 +159,22 @@ def minimax(board):
     """
     Returns the optimal action for the current player on the board.
     """
-    raise NotImplementedError
+    (max_value(board), min_value(board))
+
+
+def max_value(board):
+    if terminal(board):
+        return utility(board)
+    v = sys.maxsize
+    for action in actions(board):
+        v = max(v, min_value(result(board, action)))
+    return v
+
+
+def min_value(board):
+    if terminal(board):
+        return utility(board)
+    v = -sys.maxsize - 1
+    for action in actions(board):
+        v = min(v, max_value(result(board, action)))
+    return v
