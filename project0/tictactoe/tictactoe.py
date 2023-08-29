@@ -9,6 +9,13 @@ O = "O"
 EMPTY = None
 
 
+class GameState:
+    player_last_played = None
+
+
+game_state = GameState
+
+
 def initial_state():
     """
     Returns starting state of the board.
@@ -22,7 +29,22 @@ def player(board):
     """
     Returns player who has the next turn on a board.
     """
-    raise NotImplementedError
+
+    # Game is already over
+    if board == initial_state():
+        game_state.player_last_played = X
+        return X
+
+    if terminal(board):
+        game_state.player_last_played = None
+        return
+
+    if game_state.player_last_played == X:
+        return O
+    elif game_state.player_last_played == O:
+        return X
+    else:
+        return ValueError("THe value of the variable is neither X, and neither O.")
 
 
 def actions(board):
