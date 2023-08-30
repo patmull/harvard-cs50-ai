@@ -21,6 +21,7 @@ user = None
 board = ttt.initial_state()
 ai_turn = False
 
+
 while True:
 
     for event in pygame.event.get():
@@ -113,11 +114,9 @@ while True:
             if ai_turn:
                 time.sleep(0.5)
                 move = ttt.minimax(board)
-                print("move:")
-                print(move)
+                print("move: {}".format(move))
                 board = ttt.result(board, move)
-                print("board:")
-                print(board)
+                print("board: {}".format(board))
                 ai_turn = False
             else:
                 ai_turn = True
