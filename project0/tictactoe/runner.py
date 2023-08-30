@@ -95,6 +95,7 @@ while True:
 
         # Show title
         if game_over:
+            print("board in runner: {}".format(board))
             winner = ttt.winner(board)
             if winner is None:
                 title = f"Game Over: Tie."
@@ -113,10 +114,11 @@ while True:
         if user != player and not game_over:
             if ai_turn:
                 time.sleep(0.5)
+                print("board before minimax in runner: {}".format(board))
                 move = ttt.minimax(board)
                 print("move: {}".format(move))
                 board = ttt.result(board, move)
-                print("board: {}".format(board))
+                print("board after move: {}".format(board))
                 ai_turn = False
             else:
                 ai_turn = True
