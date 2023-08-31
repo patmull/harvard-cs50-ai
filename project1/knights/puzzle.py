@@ -9,11 +9,17 @@ BKnave = Symbol("B is a Knave")
 CKnight = Symbol("C is a Knight")
 CKnave = Symbol("C is a Knave")
 
+ASaid = Symbol("A said")
+BSaid = Symbol("B Said")
+CSaid = Symbol("C Said")
+
+# ASaid = Or(AKnight, AKnave)
+
 # Puzzle 0
 # A says "I am both a knight and a knave."
 knowledge0 = And(
     # TODO
-    And(AKnight, AKnave)
+    Implication(ASaid, And(AKnight, AKnave))
 )
 
 # Puzzle 1
@@ -21,7 +27,8 @@ knowledge0 = And(
 # B says nothing.
 knowledge1 = And(
     # TODO
-    And(AKnave, BKnave)
+    Implication(ASaid, And(AKnave, BKnave)),
+    Not(BSaid)
 )
 
 # Puzzle 2
@@ -29,9 +36,46 @@ knowledge1 = And(
 # B says "We are of different kinds."
 knowledge2 = And(
     # TODO
-    Biconditional(AKnight, BKnight),
-    And(Implication(AKnight, Not(BKnight)), Implication(BKnight, Not(AKnight))),
-    And(Implication(AKnave, BKnight), Implication(BKnave, AKnight))
+    Implication(ASaid, Biconditional(AKnight, BKnight)),
+    )
+
+# Puzzle 3
+# A says either "I am a knight." or "I am a knave.", but you don't know which.
+# B says "A said 'I am a knave'."
+# B says "C is a knave."
+# C says "A is a knight."
+knowledge3 = And(
+    And(ASaid, Or(AKnight, AKnave)),
+    And(BSaid, And(ASaid, AKnave)),
+    And(BSaid, Not(CKnave)),
+    And(CSaid, AKnight)
+)
+
+"""
+PROBABLY RIGHT SOLUTION:
+
+# A says "I am both a knight and a knave."
+knowledge0 = And(
+    # TODO
+    Implication(ASaid, And(AKnight, AKnave))
+)
+
+# Puzzle 1
+# A says "We are both knaves."
+# B says nothing.
+knowledge1 = And(
+    # TODO
+    Implication(ASaid, And(AKnave, BKnave)),
+    Not(BSaid)
+)
+
+# Puzzle 2
+# A says "We are the same kind."
+# B says "We are of different kinds."
+knowledge2 = And(
+    # TODO
+    Implication(ASaid, Biconditional(AKnight, BKnight)),
+    Implication(BSaid, Biconditional(AKnight, Not(BKnight)))
 )
 
 # Puzzle 3
@@ -40,8 +84,12 @@ knowledge2 = And(
 # B says "C is a knave."
 # C says "A is a knight."
 knowledge3 = And(
-    # TODO
+    Biconditional(ASaid, Or(AKnight, AKnave)),
+    Biconditional(BSaid, ASaid),
+    Biconditional(BSaid, CKnave),
+    Biconditional(CSaid, AKnight)
 )
+"""
 
 
 def main():
