@@ -14,51 +14,67 @@ general_knowledge_2 = Or(BKnight, BKnave)
 general_knowledge_3 = Not(And(AKnight, AKnave))
 general_knowledge_4 = Not(And(BKnight, BKnave))
 
+# The general knowledge needs to be there, otherwise there is too much of possibilities from
+# which it can be concluded.
+general_knowledge = And(
+    general_knowledge_1, general_knowledge_2, general_knowledge_3, general_knowledge_4
+)
+
 # ASaid = Or(AKnight, AKnave)
 
 # Puzzle 0
 # A says "I am both a knight and a knave."
 ASaid = And(AKnight, AKnave)
 
-general_knowledge_with_sentece_1 = Implication(AKnight, ASaid)
-general_knowledge_with_sentece_2 = Implication(AKnave, Not(ASaid))
-
-general_knowledge = And(
-    general_knowledge_1, general_knowledge_2, general_knowledge_3, general_knowledge_4)
+# Encoding of the fact that Knave lies and knight not
+general_knowledge_with_sentence_1 = Implication(AKnight, ASaid)
+general_knowledge_with_sentence_2 = Implication(AKnave, Not(ASaid))
 
 knowledge0 = And(
     # TODO
     general_knowledge,
-    general_knowledge_with_sentece_1,
-    general_knowledge_with_sentece_2
+
+    general_knowledge_with_sentence_1,
+    general_knowledge_with_sentence_2
 )
 
 # Puzzle 1
 # A says "We are both knaves."
 # B says nothing.
 ASaid = And(AKnave, BKnave)
-BSaid = And(Not(BKnave), BKnave)
+
+general_knowledge_with_sentence_1_a = Implication(AKnight, ASaid)
+general_knowledge_with_sentence_2_a = Implication(AKnave, Not(ASaid))
 
 knowledge1 = And(
-    general_knowledge_1,
-    general_knowledge_2,
-    general_knowledge_3,
-    general_knowledge_4,
     # TODO
-    ASaid,
-    Not(BSaid)
+    general_knowledge,
+
+    general_knowledge_with_sentence_1_a,
+    general_knowledge_with_sentence_2_a,
+
 )
 
 # Puzzle 2
 # A says "We are the same kind."
 # B says "We are of different kinds."
 ASaid = Biconditional(AKnight, BKnight)
-BSaid = Or((Not(Biconditional(AKnight, BKnight))), And(BSaid, Not(Biconditional(AKnave, BKnave))))
+BSaid_1 = Not(Biconditional(AKnave, BKnave))
+BSaid_2 = Not(Biconditional(AKnight, BKnight))
+BSaid = And(BSaid_1, BSaid_2)
+
+general_knowledge_with_sentence_1_a = Implication(AKnight, ASaid)
+general_knowledge_with_sentence_2_a = Implication(AKnave, Not(ASaid))
+general_knowledge_with_sentence_1_b = Implication(BKnight, BSaid)
+general_knowledge_with_sentence_2_b = Implication(BKnave, Not(BSaid))
 
 knowledge2 = And(
-    # TODO
-    ASaid,
-    BSaid
+    general_knowledge,
+
+    general_knowledge_with_sentence_1_a,
+    general_knowledge_with_sentence_2_a,
+    general_knowledge_with_sentence_1_b,
+    general_knowledge_with_sentence_2_b
 )
 
 # Puzzle 3
@@ -66,20 +82,30 @@ knowledge2 = And(
 # B says "A said 'I am a knave'."
 # B says "C is a knave."
 # C says "A is a knight."
-ASaid1 = AKnight  # "I am a knight."
-ASaid2 = AKnave  # "I am a knave."
-ASaid = Or(ASaid1, ASaid2)
+ASaid = Or(AKnight, AKnave)
 BSaid1 = And(ASaid, AKnave)
-BSaid2 = CKnight
+BSaid2 = CKnave
+BSaid = And(BSaid1, BSaid2)
 CSaid = AKnight
 
+general_knowledge_with_sentence_1_a = Implication(AKnight, ASaid)
+general_knowledge_with_sentence_2_a = Implication(AKnave, Not(ASaid))
+# TODO:
+general_knowledge_with_sentence_1_b = Implication(BKnight, CKnave)
+general_knowledge_with_sentence_2_b = Implication(BKnave, Not(CKnave))
+# OK:
+general_knowledge_with_sentence_1_c = Implication(CKnight, CSaid)
+general_knowledge_with_sentence_2_c = Implication(CKnave, Not(CSaid))
+
 knowledge3 = And(
-    ASaid1,
-    ASaid2,
-    ASaid,
-    BSaid1,
-    BSaid2,
-    CSaid
+    general_knowledge,
+
+    general_knowledge_with_sentence_1_a,
+    general_knowledge_with_sentence_2_a,
+    general_knowledge_with_sentence_1_b,
+    general_knowledge_with_sentence_2_b,
+    general_knowledge_with_sentence_1_c,
+    general_knowledge_with_sentence_2_c
 )
 
 """
