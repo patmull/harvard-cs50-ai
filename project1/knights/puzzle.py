@@ -1,5 +1,9 @@
 from logic import *
 
+"""
+Visual explanations for this can be found here: https://www.youtube.com/watch?v=KiI8AbphbSw
+"""
+
 AKnight = Symbol("A is a Knight")
 AKnave = Symbol("A is a Knave")
 
