@@ -180,6 +180,7 @@ while True:
 
         # If AI button clicked, make an AI move
         if aiButton.collidepoint(mouse) and not lost:
+            print("ai.make_safe_move()")
             move = ai.make_safe_move()
             if move is None:
                 move = ai.make_random_move()
@@ -215,8 +216,13 @@ while True:
         if game.is_mine(move):
             lost = True
         else:
+            print("move.else")
             nearby = game.nearby_mines(move)
             revealed.add(move)
+            print("nearby")
+            print(nearby)
+            print("move")
+            print(move)
             ai.add_knowledge(move, nearby)
 
     pygame.display.flip()
