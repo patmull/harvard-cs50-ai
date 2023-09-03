@@ -223,6 +223,8 @@ while True:
             print(nearby)
             print("move")
             print(move)
+            print("type(move):")
+            print(type(move))
             ai.add_knowledge(move, nearby)
 
     pygame.display.flip()

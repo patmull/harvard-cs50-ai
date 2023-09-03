@@ -92,6 +92,8 @@ class Sentence():
     """
 
     def __init__(self, cells, count):
+        print("cells: {}".format(cells))
+        print("set(cells): {}".format(set(cells)))
         self.cells = set(cells)
         self.count = count
 
@@ -152,12 +154,15 @@ class Sentence():
         """
         if len(self.cells) == self.count + 1:
             if cell in self.cells:
+                print("cell to remove: {}".format(cell))
+                print("cells before the removal:")
+                print(self.cells)
                 self.cells.remove(cell)
                 self.count -= 1
                 # if we were told that C were safe, we could remove C from the sentence altogether,
                 print("mark_safe:self.cells")
                 print(self.cells)
-                print("cell: {}".format(cell))
+
 
     """
     def identify_safe_cell(self):
@@ -198,6 +203,8 @@ class MinesweeperAI():
         Marks a cell as a mine, and updates all knowledge
         to mark that cell as a mine as well.
         """
+        print("mark_mine.type(cell):")
+        print(type(cell))
         self.mines.add(cell)
         for sentence in self.knowledge:
             sentence.mark_mine(cell)
@@ -208,7 +215,16 @@ class MinesweeperAI():
         to mark that cell as safe as well.
         """
         print("cell in mark_safe: {}".format(cell))
-        self.safes.add(cell)
+        print("mark_safe.type(cell):")
+        print(type(cell))
+        if isinstance(cell, set):
+            print("mark_safe.type(cell):")
+            print(type(cell))
+            self.safes.add(cell)
+        else:
+            print("THIS IS NOT A SET!!!")
+            print("mark_safe.type(cell):")
+            print(type(cell))
         for sentence in self.knowledge:
             sentence.mark_safe(cell)
 
@@ -228,10 +244,19 @@ class MinesweeperAI():
         """
 
         # 1) mark the cell as a move that has been made
-        self.moves_made.add(cell)
+        if isinstance(cell, tuple):
+            print("if isinstance:add_knowledge.type(cell):")
+            print(type(cell))
+            self.moves_made.add(cell)
+        else:
+            print("Varibale NOT TUPLE!")
+            print(cell)
+            print(type(cell))
         # 2) mark the cell as safe
         print("cell in add_knowledge")
         print(cell)
+        print("add_knowledge.type(cell)")
+        print(type(cell))
         self.mark_safe(cell)
         """
         3) add a new sentence to the AI's knowledge base
@@ -268,6 +293,8 @@ class MinesweeperAI():
 
             if len(known_mines) > 0:
                 for mine_cell in known_mines.copy():
+                    print("type(mine_cell):")
+                    print(type(mine_cell))
                     self.mark_mine(mine_cell)
                     # 5) add any new sentences to the AI's knowledge base
                     # if they can be inferred from existing knowledge
@@ -292,8 +319,31 @@ class MinesweeperAI():
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        # TODO:
-        return None
+        # This is possible silly check but I don't know where the appearing of a non tuple elements comes from
+        print()
+
+        print("self.safes")
+        print(self.safes)
+        print("self.moves_made")
+        print(self.moves_made)
+        safe_choice_to_make = self.safes.difference(self.moves_made)
+
+        if len(safe_choice_to_make) > 0:
+            safes_set_length = len(safe_choice_to_make) - 1
+            try:
+                random_index_from_set = random.randrange(safes_set_length)
+            except ValueError:
+                random_index_from_set = 0
+
+            print("safe_choice_to_make")
+            print(safe_choice_to_make)
+            safe_choice_to_make_list_of_lists_pairs = [[item for item in pair] for pair in safe_choice_to_make]
+            random_element_from_set = list(safe_choice_to_make_list_of_lists_pairs)[random_index_from_set]
+            print("returned_set")
+            print(random_element_from_set)
+            return tuple(random_element_from_set)
+        else:
+            return None
 
     def make_random_move(self):
         """
@@ -311,10 +361,6 @@ class MinesweeperAI():
                 random_move_j = random.randrange(0, self.width)
                 print("random_move_i: {}".format(random_move_i))
                 print("random_move_j: {}".format(random_move_j))
-                print("self.moves_made:")
-                print(self.moves_made)
-                print("self.safes:")
-                print(self.safes)
 
                 print("options_tried: {}".format(options_tried))
 
@@ -329,19 +375,21 @@ class MinesweeperAI():
                         and (random_move_i, random_move_j) in self.safes):
                     print("Random move:")
                     print("random_move_i, random_move_j")
-                    return random_move_i, random_move_j
+                    added_move = (random_move_i, random_move_j)
+
+                    return added_move
                 else:
                     options_tried.add(((random_move_i, random_move_j)))
 
     def update_knowledge(self):
         knowledge = self.knowledge
-        print(knowledge)
-        print(self.knowledge)
         count_control = 0
         for i in range(len(knowledge)):
             for j in range(len(knowledge)):
                 print("knowledge[i]: {}".format(knowledge[i]))
                 print("knowledge[j]: {}".format(knowledge[j]))
+                print("knowledge[i].cells: {}".format(knowledge[i].cells))
+                print("knowledge[j].cells: {}".format(knowledge[j].cells))
                 count_control += 1
                 if len(knowledge[i].cells) > 0 and len(knowledge[j].cells) > 0:
                     if knowledge[i].cells.issubset(knowledge[j].cells):
@@ -349,9 +397,11 @@ class MinesweeperAI():
                         new_count = knowledge[j].count - knowledge[i].count
                         print("new_cells {}".format(new_cells))
                         print("new_count {}".format(new_count))
+
+                        print("type(new_cells):")
+                        print(type(new_cells))
+
                         self.knowledge.append(Sentence(new_cells, new_count))
-                        print("Knowledge after update:")
-                        print(self.knowledge)
 
                 if count_control > (self.width*self.height):
                     break
