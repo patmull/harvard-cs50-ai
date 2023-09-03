@@ -1,5 +1,7 @@
 import itertools
 import random
+import traceback
+import iteration_utilities
 
 
 class Minesweeper():
@@ -92,9 +94,17 @@ class Sentence():
     """
 
     def __init__(self, cells, count):
+        self.cells = set()
         print("cells: {}".format(cells))
-        print("set(cells): {}".format(set(cells)))
-        self.cells = set(cells)
+        if len(cells) == 2:
+            self.cells.add(cells)
+            print("self.cells {}".format(self.cells))
+        elif len(cells) == 0:
+            print("Set empty")
+        else:
+            print("Unexpected length of a cell!")
+            traceback.print_stack()
+
         self.count = count
 
     def __eq__(self, other):
@@ -220,11 +230,26 @@ class MinesweeperAI():
         if isinstance(cell, set):
             print("mark_safe.type(cell):")
             print(type(cell))
-            self.safes.add(cell)
+            if len(cell) == 1:
+                self.safes.add(tuple(iteration_utilities.first(cell)))
+            else:
+                print("THIS IS NOT A VALID CELL!!!")
+                print("cell:")
+                print(cell)
+                traceback.print_stack()
         else:
             print("THIS IS NOT A SET!!!")
             print("mark_safe.type(cell):")
             print(type(cell))
+            # traceback.print_stack()
+            if isinstance(cell, tuple):
+                print("Variable is already a tuple. Not converting.")
+                self.safes.add(tuple(cell))
+            else:
+                print("Variable is neither a tuple, neither a set.")
+                print(type(cell))
+                traceback.print_stack()
+
         for sentence in self.knowledge:
             sentence.mark_safe(cell)
 
@@ -249,9 +274,10 @@ class MinesweeperAI():
             print(type(cell))
             self.moves_made.add(cell)
         else:
-            print("Varibale NOT TUPLE!")
+            print("Variable NOT TUPLE!")
             print(cell)
             print(type(cell))
+            traceback.print_stack()
         # 2) mark the cell as safe
         print("cell in add_knowledge")
         print(cell)
@@ -273,26 +299,30 @@ class MinesweeperAI():
         """
         print("4) mark any additional cells as safe or as mines "
               "if it can be concluded based on the AI's knowledge base")
+        print("------------------------")
+        print("self.knowledge:")
         for sentence in self.knowledge:
-            known_safes = sentence.known_safes()
-            known_mines = sentence.known_mines()
-            print("known_safes: {}".format(known_safes))
-            print("known_mines: {}".format(known_mines))
-            if len(known_safes) > 0:
-                for safe_cell in known_safes.copy():
-                    print("safe_cell: {}".format(safe_cell))
+            print(sentence)
+        print("------------------------")
+        for sentence in self.knowledge:
+            known_safe_cells = sentence.known_safes()
+            known_mine_cells = sentence.known_mines()
+            print("known_safes: {}".format(known_safe_cells))
+            print("known_mines: {}".format(known_mine_cells))
+            if len(known_safe_cells) > 0:
+                print("safe_cell: {}".format(known_safe_cells))
 
-                    self.mark_safe(safe_cell)
-                    # 5) add any new sentences to the AI's knowledge base
-                    # if they can be inferred from existing knowledge
-                    print("5) add any new sentences to the AI's "
-                          "knowledge base if they can be inferred from existing knowledge")
-                    print("mark_safe")
+                self.mark_safe(known_safe_cells)
+                # 5) add any new sentences to the AI's knowledge base
+                # if they can be inferred from existing knowledge
+                print("5) add any new sentences to the AI's "
+                      "knowledge base if they can be inferred from existing knowledge")
+                print("mark_safe")
 
-                    self.update_knowledge()
+                self.update_knowledge()
 
-            if len(known_mines) > 0:
-                for mine_cell in known_mines.copy():
+            if len(known_mine_cells) > 0:
+                for mine_cell in known_mine_cells.copy():
                     print("type(mine_cell):")
                     print(type(mine_cell))
                     self.mark_mine(mine_cell)
@@ -320,7 +350,6 @@ class MinesweeperAI():
         and self.moves_made, but should not modify any of those values.
         """
         # This is possible silly check but I don't know where the appearing of a non tuple elements comes from
-        print()
 
         print("self.safes")
         print(self.safes)
@@ -382,7 +411,12 @@ class MinesweeperAI():
                     options_tried.add(((random_move_i, random_move_j)))
 
     def update_knowledge(self):
-        knowledge = self.knowledge
+        knowledge = self.knowledge.copy()
+        print("----------------------")
+        print("knowledge:")
+        for sentence in knowledge:
+            print(sentence)
+        print("-----------------------")
         count_control = 0
         for i in range(len(knowledge)):
             for j in range(len(knowledge)):
@@ -393,15 +427,22 @@ class MinesweeperAI():
                 count_control += 1
                 if len(knowledge[i].cells) > 0 and len(knowledge[j].cells) > 0:
                     if knowledge[i].cells.issubset(knowledge[j].cells):
-                        new_cells = knowledge[j].cells - knowledge[i].cells
+                        new_cells = knowledge[j].cells.difference(knowledge[i].cells)
                         new_count = knowledge[j].count - knowledge[i].count
-                        print("new_cells {}".format(new_cells))
-                        print("new_count {}".format(new_count))
+                        # TODO: Possibly remove the zero check
+                        if len(new_cells) == 2 or len(new_cells) == 0:
+                            print("new_cells {}".format(new_cells))
+                            print("new_count {}".format(new_count))
 
-                        print("type(new_cells):")
-                        print(type(new_cells))
+                            print("update_knowledge.type(new_cells):")
+                            print(type(new_cells))
 
-                        self.knowledge.append(Sentence(new_cells, new_count))
+                            self.knowledge.append(Sentence(new_cells, new_count))
+                        else:
+                            print("UNEXPECTED Len of new_cells!!!!")
+                            print(new_cells)
+                            print(len(new_cells))
+                            traceback.print_stack()
 
                 if count_control > (self.width*self.height):
                     break
