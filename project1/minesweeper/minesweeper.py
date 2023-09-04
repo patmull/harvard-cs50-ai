@@ -529,54 +529,64 @@ class MinesweeperAI():
 
         if len(safe_choices) > 0:
             safes_set_length = len(safe_choices) - 1
-
-            safe_choices = [[item for item in pair] for pair in safe_choices]
+            print("safe_choices")
+            print(safe_choices)
 
             for safe_choice in safe_choices:
                 for sentence in self.knowledge:
                     print("list(sentence.cells)[0]")
-                    print(list(safe_choice)[0])
+                    print(safe_choice)
                     print("self.moves_made")
                     print(self.moves_made)
-                    if list(safe_choice)[0] not in self.moves_made:
-                        print("tuple(safe_choice):")
-                        print(tuple(safe_choice))
+                    if safe_choice not in self.moves_made:
+                        print("safe_choice:")
+                        print(safe_choice)
                         print("sentence.cells:")
                         print(sentence.cells)
-                        if list(safe_choice)[0] in sentence.cells:
-                            for sentence_2 in self.knowledge:
-                                print("list(sentence_2.cells)[0]:")
-                                print(list(sentence_2.cells)[0])
-                                if list(sentence_2.cells)[0] not in self.moves_made:
-                                    print("safe_choice[0], safe_choice[1] - 1:")
-                                    print(safe_choice[0], safe_choice[1] - 1)
-                                    if (list(sentence_2.cells)[0] == (safe_choice[0], safe_choice[1] - 1)
-                                            or list(sentence_2.cells)[0] == (safe_choice[0], safe_choice[1] + 1)
-                                            or list(sentence_2.cells)[0] == (safe_choice[0] + 1, safe_choice[1])
-                                            or list(sentence_2.cells)[0] == (safe_choice[0] - 1, safe_choice[1])
-                                    ):
-                                        if sentence_2.count == 0:
-                                            print("Based on the cross strategy, AI chose:")
-                                            print(list(sentence_2.cells)[0])
-                                            return tuple(list(sentence_2.cells)[0])
+                        for sentence_2 in self.knowledge:
+                            print("list(sentence_2.cells)[0]:")
+                            print(list(sentence_2.cells)[0])
+                            print("safe_choice[0], safe_choice[1] - 1:")
+                            print(safe_choice[0], safe_choice[1] - 1)
+                            tested_tuple = (safe_choice[0], safe_choice[1] - 1)
+                            if list(sentence_2.cells)[0] == tested_tuple:
+                                if sentence_2.count == 0:
+                                    print("Based on the cross strategy, AI chose:")
+                                    print(list(sentence_2.cells)[0])
+                                    return tuple(list(sentence_2.cells)[0])
+                            # TODO:
+                            """
+                            if (list(sentence_2.cells)[0] == (safe_choice[0], safe_choice[1] + 1)):
+                            if (list(sentence_2.cells)[0] == (safe_choice[0] + 1, safe_choice[1])):
+                            if (list(sentence_2.cells)[0] == (safe_choice[0] - 1, safe_choice[1]))):
+                            """
+
+
 
             for sentence in self.knowledge:
                 # If we know it's zero, then make the move
+                print("sentence.cells[0]")
+                print(list(sentence.cells)[0])
+                print("self.moves_made: {}".format(self.moves_made))
                 if list(sentence.cells)[0] not in self.moves_made:
-                    print("self.moves_made: {}".format(self.moves_made))
                     if sentence.count == 0:
                         print("Based on the pick zero immediately strategy, AI chose:")
                         print(sentence.cells)
                         return tuple(list(sentence.cells)[0])
+
+
+            # RANDOM STRATEGY
+            # last resort is simply choose random, because there is no other way to choose
+
+            safe_choices = [[item for item in pair] for pair in safe_choices]
 
             try:
                 random_index_from_set = random.randrange(safes_set_length)
             except ValueError:
                 random_index_from_set = 0
 
-            # last resort is simply choose random, because there is no other way to choose
             random_element_from_set = list(safe_choices)[random_index_from_set]
-            print("No other strategy can bse used. AI is using random strategy from known safe choices.")
+            print("No other strategy can be used. AI is using random strategy from known safe choices.")
             print(random_element_from_set)
             return tuple(random_element_from_set)
         else:
