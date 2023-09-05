@@ -740,7 +740,7 @@ class MinesweeperAI():
                 if sentence_about_mine_cell is not None and sentence_about_cell is not None:
 
                     if sentence_about_cell.count == sentence_about_mine_cell.count:
-                        print("Marking safe by the sum of neighbors strategy")
+                        print("Marking safe by the FLAGGED NEIGHBOR STRATEGY strategy")
                         print("neighbor_cells")
                         print(neighbor_cells)
                         for neighbor_cell in neighbor_cells:

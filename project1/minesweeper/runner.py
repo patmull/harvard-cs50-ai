@@ -170,11 +170,17 @@ while True:
             for j in range(WIDTH):
                 if cells[i][j].collidepoint(mouse) and (i, j) not in revealed:
                     if (i, j) in flags:
-                        flags.remove((i, j))
-                        game.mines_found.remove((i, j))
+                        if game.is_mine((i, j)):
+                            flags.remove((i, j))
+                            game.mines_found.remove((i, j))
+                        else:
+                            lost = True
                     else:
-                        flags.add((i, j))
-                        game.mines_found.add((i, j))
+                        if game.is_mine((i, j)):
+                            flags.add((i, j))
+                            game.mines_found.add((i, j))
+                        else:
+                            lost = True
                     time.sleep(0.2)
 
     elif left == 1:
