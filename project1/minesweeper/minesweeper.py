@@ -234,9 +234,9 @@ class MinesweeperAI():
         Marks a cell as safe, and updates all knowledge
         to mark that cell as safe as well.
         """
-        print("cell in mark_safe: {}".format(cell))
-        print("mark_safe.type(cell):")
-        print(type(cell))
+        # print("cell in mark_safe: {}".format(cell))
+        # print("mark_safe.type(cell):")
+        # print(type(cell))
         if isinstance(cell, set):
             print("mark_safe.type(cell):")
             print(type(cell))
@@ -248,13 +248,13 @@ class MinesweeperAI():
                 print(cell)
                 traceback.print_stack()
         else:
-            print("THIS IS NOT A SET!!!")
-            print("mark_safe.type(cell):")
-            print(type(cell))
-            print("cell: {}".format(cell))
+            # print("THIS IS NOT A SET!!!")
+            # print("mark_safe.type(cell):")
+            # print(type(cell))
+            # print("cell: {}".format(cell))
             # traceback.print_stack()
             if isinstance(cell, tuple):
-                print("Variable is already a tuple. Not converting.")
+                # print("Variable is already a tuple. Not converting.")
                 self.safes_known.add(tuple(cell))
             else:
                 print("Variable is neither a tuple, neither a set.")
@@ -286,8 +286,10 @@ class MinesweeperAI():
 
         return neighbor_cells_sum
 
-
     def get_neighbor_cells(self, cell, types=None):
+
+        if types is None:
+            raise ValueError("types argument needs to be specified!")
 
         all_types = False
         if str.lower(types) == "all":
@@ -297,16 +299,16 @@ class MinesweeperAI():
         if "bottom-neighbor" in types or all_types:
             # bottom neighbor
             if cell[0] < self.height - 1:
-                print(type(cell))
-                print("cell[0]: {}".format(cell[0]))
-                print("cell[1]: {}".format(cell[1]))
+                # print(type(cell))
+                # print("cell[0]: {}".format(cell[0]))
+                # print("cell[1]: {}".format(cell[1]))
 
                 safe_height = cell[0] + 1
                 safe_width = cell[1]
                 new_safe_cell = (safe_height, safe_width)
-                print("bottom neighbor")
-                print("cell: {}".format(cell))
-                print("new_safe_cell: {}".format(new_safe_cell))
+                # print("bottom neighbor")
+                # print("cell: {}".format(cell))
+                # print("new_safe_cell: {}".format(new_safe_cell))
 
                 returned_cells.append(new_safe_cell)
                 # new_sentence = Sentence(new_safe_cell, 0)
@@ -319,9 +321,9 @@ class MinesweeperAI():
                 safe_width = cell[1]
                 new_safe_cell = (safe_height, safe_width)
 
-                print("upper neighbor")
-                print("cell: {}".format(cell))
-                print("new_safe_cell: {}".format(new_safe_cell))
+                # print("upper neighbor")
+                # print("cell: {}".format(cell))
+                # print("new_safe_cell: {}".format(new_safe_cell))
 
                 returned_cells.append(new_safe_cell)
                 # new_sentence = Sentence(new_safe_cell, 0)
@@ -334,9 +336,9 @@ class MinesweeperAI():
                 safe_width = cell[1] - 1
                 new_safe_cell = (safe_height, safe_width)
 
-                print("left neighbor:")
-                print("cell: {}".format(cell))
-                print("new_safe_cell: {}".format(new_safe_cell))
+                # print("left neighbor:")
+                # print("cell: {}".format(cell))
+                # print("new_safe_cell: {}".format(new_safe_cell))
 
                 returned_cells.append(new_safe_cell)
                 # new_sentence = Sentence(new_safe_cell, 0)
@@ -349,9 +351,9 @@ class MinesweeperAI():
                 safe_width = cell[1] + 1
                 new_safe_cell = (safe_height, safe_width)
 
-                print("right neighbor:")
-                print("cell: {}".format(cell))
-                print("new_safe_cell: {}".format(new_safe_cell))
+                # print("right neighbor:")
+                # print("cell: {}".format(cell))
+                # print("new_safe_cell: {}".format(new_safe_cell))
 
                 returned_cells.append(new_safe_cell)
                 # new_sentence = Sentence(new_safe_cell, 0)
@@ -364,9 +366,9 @@ class MinesweeperAI():
                 safe_width = cell[1] - 1
                 new_safe_cell = (safe_height, safe_width)
 
-                print("left upper corner neighbor:")
-                print("cell: {}".format(cell))
-                print("new_safe_cell: {}".format(new_safe_cell))
+                # print("left upper corner neighbor:")
+                # print("cell: {}".format(cell))
+                # print("new_safe_cell: {}".format(new_safe_cell))
 
                 returned_cells.append(new_safe_cell)
                 # new_sentence = Sentence(new_safe_cell, 0)
@@ -379,9 +381,9 @@ class MinesweeperAI():
                 safe_width = cell[1] + 1
                 new_safe_cell = (safe_height, safe_width)
 
-                print("right upper corner neighbor:")
-                print("cell: {}".format(cell))
-                print("new_safe_cell: {}".format(new_safe_cell))
+                # print("right upper corner neighbor:")
+                # print("cell: {}".format(cell))
+                # print("new_safe_cell: {}".format(new_safe_cell))
 
                 returned_cells.append(new_safe_cell)
                 # new_sentence = Sentence(new_safe_cell, 0)
@@ -394,9 +396,9 @@ class MinesweeperAI():
                 safe_width = cell[1] - 1
                 new_safe_cell = (safe_height, safe_width)
 
-                print("left bottom corner neighbor:")
-                print("cell: {}".format(cell))
-                print("new_safe_cell: {}".format(new_safe_cell))
+                # print("left bottom corner neighbor:")
+                # print("cell: {}".format(cell))
+                # print("new_safe_cell: {}".format(new_safe_cell))
 
                 returned_cells.append(new_safe_cell)
                 # new_sentence = Sentence(new_safe_cell, 0)
@@ -409,13 +411,20 @@ class MinesweeperAI():
                 safe_width = cell[1] + 1
                 new_safe_cell = (safe_height, safe_width)
 
-                print("right bottom corner neighbor:")
-                print("cell: {}".format(cell))
-                print("new_safe_cell: {}".format(new_safe_cell))
+                # print("right bottom corner neighbor:")
+                # print("cell: {}".format(cell))
+                # print("new_safe_cell: {}".format(new_safe_cell))
 
                 returned_cells.append(new_safe_cell)
 
         return returned_cells
+
+    def find_sentence_by_cell(self, cell):
+        for sentence in self.knowledge:
+            for sentence_cell in sentence.cells:
+                if sentence_cell == cell:
+                    return sentence
+        return None
 
     def add_knowledge(self, cell, count):
         """
@@ -475,10 +484,13 @@ class MinesweeperAI():
             # TODO:
             new_safe_cells = self.get_neighbor_cells(cell, "all")
 
+            print("new_safe_cells")
+            print(new_safe_cells)
+
             for cell in new_safe_cells:
                 print("Marking safe cells picked on the simple neighbor zeros strategy")
                 self.mark_safe(cell)
-
+        """
         for sentence in self.knowledge.copy():
             known_safe_cells = sentence.known_safes()
             known_mine_cells = sentence.known_mines()
@@ -489,6 +501,9 @@ class MinesweeperAI():
                 if isinstance(known_safe_cells, set):
                     known_safe_cells = list(known_safe_cells)[0]
                     print("list(known_safe_cells)[0]: {}".format(known_safe_cells))
+
+                print("known_safe_cells:")
+                print(known_safe_cells)
                 self.mark_safe(known_safe_cells)
                 new_sentence = Sentence(known_safe_cells, 0)
 
@@ -501,7 +516,7 @@ class MinesweeperAI():
                 print("mark_safe")
 
                 # We know this by an inference described in the exercise description
-                self.update_knowledge()
+                self.update_knowledge(known_safe_cells)
 
             if len(known_mine_cells) > 0:
                 print("mine cells")
@@ -519,7 +534,9 @@ class MinesweeperAI():
                       "knowledge base if they can be inferred from existing knowledge")
 
                 # We know this by an inference described in the exercise description
-                self.update_knowledge()
+                
+        """
+        self.update_knowledge(cell)
 
         #  TODO: Add multiple cells to knowledge sentences
 
@@ -585,15 +602,14 @@ class MinesweeperAI():
                     print("self.moves_made")
                     print(self.moves_made)
                     if safe_choice not in self.moves_made:
-                        print("safe_choice:")
-                        print(safe_choice)
-                        print("sentence.cells:")
-                        print(sentence.cells)
+                        # TODO: Why are wrong cells identified as a safe???
+                        # print("safe_choice:")
+                        # print(safe_choice)
+                        # print("sentence.cells:")
+                        # print(sentence.cells)
                         for sentence_2 in self.knowledge:
-                            print("list(sentence_2.cells)[0]:")
-                            print(list(sentence_2.cells)[0])
-                            print("safe_choice[0], safe_choice[1] - 1:")
-                            print(safe_choice[0], safe_choice[1] - 1)
+                            # print("safe_choice[0], safe_choice[1] - 1:")
+                            # print(safe_choice[0], safe_choice[1] - 1)
 
                             tested_tuple = (safe_choice[0], safe_choice[1] - 1)
                             cells = self.cross_strategy(sentence_2, tested_tuple)
@@ -664,10 +680,10 @@ class MinesweeperAI():
             while True:
                 random_move_i = random.randrange(0, self.height)
                 random_move_j = random.randrange(0, self.width)
-                print("random_move_i: {}".format(random_move_i))
-                print("random_move_j: {}".format(random_move_j))
+                # print("random_move_i: {}".format(random_move_i))
+                # print("random_move_j: {}".format(random_move_j))
 
-                print("options_tried: {}".format(options_tried))
+                # print("options_tried: {}".format(options_tried))
 
                 # We do not known at all whether it mine or not, so we just pick completely random
                 if len(options_tried) == (self.width * self.height):
@@ -686,7 +702,7 @@ class MinesweeperAI():
                 else:
                     options_tried.add(((random_move_i, random_move_j)))
 
-    def update_knowledge(self):
+    def update_knowledge(self, cell):
         self.print_knowledge()
         knowledge = self.knowledge.copy()
         print("----------------------")
@@ -702,8 +718,8 @@ class MinesweeperAI():
                 if len(knowledge[i].cells) > 0 and len(knowledge[j].cells) > 0:
                     if knowledge[i].cells.issubset(knowledge[j].cells):
                         self.print_knowledge()
-                        print("knowledge[j].cells: {}".format(knowledge[j].cells))
-                        print("knowledge[i].cells: {}".format(knowledge[i].cells))
+                        # print("knowledge[j].cells: {}".format(knowledge[j].cells))
+                        # print("knowledge[i].cells: {}".format(knowledge[i].cells))
                         new_cells = knowledge[j].cells.difference(knowledge[i].cells)
                         print("new_cells: {}".format(new_cells))
                         if len(new_cells) == 2 or len(new_cells) == 0:
@@ -732,23 +748,59 @@ class MinesweeperAI():
                 if count_control > (self.width * self.height):
                     break
 
-                for cell in list(knowledge[i].cells):
-                    if cell in self.mines:
-                        sum = cell
+        # Searching for the cell in the knowledge
+        found_cell = tuple()
+        cell_count = None
+        for sentence in self.knowledge:
+            if sentence.cells == cell:
+                found_cell = sentence.cells
+                cell_count = sentence.count
 
-                # IF CELL IS FLAGGED AND THE SUM OF OF THE NEIGBORS IS == TO COUNT
+        # SUM OF NEIGHBORS STRATEGY
+        # IF SUM OF THE CELL'S NEIGHBORS IS EQUAL TO THE COUNT, NEIGHBOUR ARE MINES
 
+        neighbor_cells_sum = self.get_neighbor_cells_sum(cell)
+        neighbor_cells = self.get_neighbor_cells(cell, "all")
 
+        if neighbor_cells_sum == cell_count:
+            print("Marking mines by the sum of neighbors strategy")
+            for neighbor_cell in neighbor_cells:
+                self.mark_mine(neighbor_cell)
 
-    def cross_strategy(self, sentence, tested_tuple):
-        if list(sentence.cells)[0] == tested_tuple and list(sentence.cells)[0] not in self.moves_made:
-            if sentence.count == 0:
-                print("Based on the cross strategy, AI chose:")
-                print(list(sentence.cells)[0])
-                return tuple(list(sentence.cells)[0])
-        else:
-            print("Can't choose based on the cross strategy because the move has been already made.")
-            return None
+        # FLAGGED NEIGHBOR STRATEGY
+        # IF CELL HAS FLAGGED NEIGHBOR
+        # AND THE CELL COUNT IS EQUAL TO THE FLAGGED NEIGHBOR COUNT
+        # ALL OTHER NEIGHBORS ARE SAFE
+
+        print("self.mines:")
+        print(self.mines)
+        for mine_cell in self.mines:
+            if mine_cell in neighbor_cells:
+                sentence_about_mine_cell = self.find_sentence_by_cell(mine_cell)
+                sentence_about_cell = self.find_sentence_by_cell(cell)
+
+                if sentence_about_cell.count == sentence_about_mine_cell.count:
+                    print("Marking safe by the sum of neighbors strategy")
+                    print("neighbor_cells")
+                    print(neighbor_cells)
+                    for neighbor_cell in neighbor_cells:
+                        self.mark_safe(neighbor_cell)
+
+    def cross_strategy(self, sentence, tested_neighbor_tuple):
+        tested_cells = list(sentence.cells)
+        for tested_cell in tested_cells:
+            if tested_cell == tested_neighbor_tuple:
+                if tested_cell not in self.moves_made:
+                    if sentence.count == 0:
+                        print("Based on the cross strategy, AI chose:")
+                        print(tested_cell)
+                        return tuple(list(sentence.cells)[0])
+                else:
+                    print("Can't choose based on the cross strategy because the move has been already made.")
+                    return None
+            else:
+                # print("Tested neighbor cell is not equal to the sentence cell.")
+                return None
 
     def print_knowledge(self):
         print("------------------------")
