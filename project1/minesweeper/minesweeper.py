@@ -3,7 +3,6 @@ import random
 import traceback
 import iteration_utilities
 
-
 class Minesweeper():
     """
     Minesweeper game representation
@@ -201,9 +200,14 @@ class MinesweeperAI():
     Minesweeper game player
     """
 
-    def __init__(self, height=8, width=8):
+    def __init__(self, height=8, width=8, mines_flagged=None):
 
         # Set initial height and width
+        if mines_flagged is None:
+            self.mines_flagged = set()
+        else:
+            self.mines_flagged = mines_flagged
+
         self.height = height
         self.width = width
 
@@ -490,52 +494,7 @@ class MinesweeperAI():
             for cell in new_safe_cells:
                 print("Marking safe cells picked on the simple neighbor zeros strategy")
                 self.mark_safe(cell)
-        """
-        for sentence in self.knowledge.copy():
-            known_safe_cells = sentence.known_safes()
-            known_mine_cells = sentence.known_mines()
-            print("known_safes: {}".format(known_safe_cells))
-            print("known_mines: {}".format(known_mine_cells))
-            if len(known_safe_cells) > 0:
-                print("safe_cell: {}".format(known_safe_cells))
-                if isinstance(known_safe_cells, set):
-                    known_safe_cells = list(known_safe_cells)[0]
-                    print("list(known_safe_cells)[0]: {}".format(known_safe_cells))
 
-                print("known_safe_cells:")
-                print(known_safe_cells)
-                self.mark_safe(known_safe_cells)
-                new_sentence = Sentence(known_safe_cells, 0)
-
-                if new_sentence not in self.knowledge:
-                    self.knowledge.append(new_sentence)
-                # 5) add any new sentences to the AI's knowledge base
-                # if they can be inferred from existing knowledge
-                print("5) add any new sentences to the AI's "
-                      "knowledge base if they can be inferred from existing knowledge")
-                print("mark_safe")
-
-                # We know this by an inference described in the exercise description
-                self.update_knowledge(known_safe_cells)
-
-            if len(known_mine_cells) > 0:
-                print("mine cells")
-                print("safe_cell: {}".format(known_mine_cells))
-                if isinstance(known_mine_cells, set):
-                    known_mine_cells = list(known_mine_cells)[0]
-                    print("list(known_safe_cells)[0]: {}".format(known_mine_cells))
-                self.mark_mine(known_mine_cells)
-                # TODO:
-                # new_sentence = Sentence(known_mine_cells, len(known_mine_cells))
-                # self.knowledge.append(new_sentence)
-                # 5) add any new sentences to the AI's knowledge base
-                # if they can be inferred from existing knowledge
-                print("5) add any new sentences to the AI's "
-                      "knowledge base if they can be inferred from existing knowledge")
-
-                # We know this by an inference described in the exercise description
-                
-        """
         self.update_knowledge(cell)
 
         #  TODO: Add multiple cells to knowledge sentences
@@ -543,7 +502,6 @@ class MinesweeperAI():
         # Note that any time that you make any change to your AI’s knowledge,
         # it may be possible to draw new inferences that weren’t possible before.
         # Be sure that those new inferences are added to the knowledge base if it is possible to do so.
-
     def make_safe_move(self):
         """
         Returns a safe cell to choose on the Minesweeper board.
@@ -772,19 +730,21 @@ class MinesweeperAI():
         # AND THE CELL COUNT IS EQUAL TO THE FLAGGED NEIGHBOR COUNT
         # ALL OTHER NEIGHBORS ARE SAFE
 
-        print("self.mines:")
-        print(self.mines)
-        for mine_cell in self.mines:
+        print("self.mines_flagged:")
+        print(self.mines_flagged)
+        for mine_cell in self.mines_flagged:
             if mine_cell in neighbor_cells:
                 sentence_about_mine_cell = self.find_sentence_by_cell(mine_cell)
                 sentence_about_cell = self.find_sentence_by_cell(cell)
 
-                if sentence_about_cell.count == sentence_about_mine_cell.count:
-                    print("Marking safe by the sum of neighbors strategy")
-                    print("neighbor_cells")
-                    print(neighbor_cells)
-                    for neighbor_cell in neighbor_cells:
-                        self.mark_safe(neighbor_cell)
+                if sentence_about_mine_cell is not None and sentence_about_cell is not None:
+
+                    if sentence_about_cell.count == sentence_about_mine_cell.count:
+                        print("Marking safe by the sum of neighbors strategy")
+                        print("neighbor_cells")
+                        print(neighbor_cells)
+                        for neighbor_cell in neighbor_cells:
+                            self.mark_safe(neighbor_cell)
 
     def cross_strategy(self, sentence, tested_neighbor_tuple):
         tested_cells = list(sentence.cells)
