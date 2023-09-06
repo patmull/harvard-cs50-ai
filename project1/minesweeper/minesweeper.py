@@ -10,12 +10,12 @@ class Minesweeper():
 
     def __init__(self, height=8, width=8, mines=8):
 
-        # Set initial width, height, and number of mines
+        # Set initial width, height, and number of mines_known
         self.height = height
         self.width = width
         self.mines = set()
 
-        # Initialize an empty field with no mines
+        # Initialize an empty field with no mines_known
         self.board = []
         for i in range(self.height):
             row = []
@@ -23,7 +23,7 @@ class Minesweeper():
                 row.append(False)
             self.board.append(row)
 
-        # Add mines randomly
+        # Add mines_known randomly
         while len(self.mines) != mines:
             i = random.randrange(height)
             j = random.randrange(width)
@@ -31,13 +31,13 @@ class Minesweeper():
                 self.mines.add((i, j))
                 self.board[i][j] = True
 
-        # At first, player has found no mines
+        # At first, player has found no mines_known
         self.mines_found = set()
 
     def print(self):
         """
         Prints a text-based representation
-        of where mines are located.
+        of where mines_known are located.
         """
         for i in range(self.height):
             print("--" * self.width + "-")
@@ -55,12 +55,12 @@ class Minesweeper():
 
     def nearby_mines(self, cell):
         """
-        Returns the number of mines that are
+        Returns the number of mines_known that are
         within one row and column of a given cell,
         not including the cell itself.
         """
 
-        # Keep count of nearby mines
+        # Keep count of nearby mines_known
         count = 0
 
         # Loop over all cells within one row and column
@@ -90,14 +90,14 @@ class Sentence():
     """
     Logical statement about a Minesweeper game
     A sentence consists of a set of board cells,
-    and a count of the number of those cells which are mines.
+    and a count of the number of those cells which are mines_known.
     """
 
     def __init__(self, cells, count):
-        if isinstance(cells, set):
-            traceback.print_stack()
+
         if count < 0:
-            traceback.print_stack()
+            raise ValueError("Count cannot be negative! If it is negative by the sum calculation, then do not create "
+                             "the Sentence object in the first place!")
 
         self.cells = set()
         print("Sentence.cells: {}".format(cells))
@@ -105,11 +105,11 @@ class Sentence():
             self.cells.add(cells)
             print("self.cells {}".format(self.cells))
         elif len(cells) == 0:
-            print("Set empty")
-            traceback.print_stack()
+            print("Set empty. Not adding anything.")
+        elif len(cells) != 0 and len(cells) != 2 and len(cells) > 0:
+            self.cells.update(cells)
         else:
-            print("Unexpected length of a cell!")
-            traceback.print_stack()
+            raise ValueError("Unexpected length of a cell!")
 
         self.count = count
 
@@ -121,9 +121,8 @@ class Sentence():
 
     def known_mines(self):
         """
-        Returns the set of all cells in self.cells known to be mines.
+        Returns the set of all cells in self.cells known to be mines_known.
         """
-
         if self.count == 0:
             return set()
 
@@ -192,9 +191,6 @@ class Sentence():
     """
 
 
-
-
-
 class MinesweeperAI():
     """
     Minesweeper game player
@@ -214,8 +210,10 @@ class MinesweeperAI():
         # Keep track of which cells have been clicked on
         self.moves_made = set()
 
+        # Keep track of cells known to be safe or mines_known
+        self.mines_known = set()
         # Keep track of cells known to be safe or mines
-        self.mines = set()
+        self.mines_known_by_ai = set()
         # We know these are safe, but don't know the exact value of those
         self.safes_known = set()
 
@@ -229,9 +227,14 @@ class MinesweeperAI():
         """
         print("mark_mine.type(cell):")
         print(type(cell))
-        self.mines.add(cell)
+        self.mines_known.add(cell)
+
         for sentence in self.knowledge:
             sentence.mark_mine(cell)
+
+    def add_cells_to_knowledge(self, cells, count):
+        new_sentence = Sentence(cells, count)
+        self.knowledge.append(new_sentence)
 
     def mark_safe(self, cell):
         """
@@ -266,6 +269,10 @@ class MinesweeperAI():
                 traceback.print_stack()
 
         # UPDATING THE KNOWLEDGE
+
+        # Add new knowledge (multiple cells sentences)
+
+
         # remove the empty sets from the knowledge
         updated_knowledge = []
         for sentence in self.knowledge:
@@ -433,14 +440,14 @@ class MinesweeperAI():
     def add_knowledge(self, cell, count):
         """
         Called when the Minesweeper board tells us, for a given
-        safe cell, how many neighboring cells have mines in them.
+        safe cell, how many neighboring cells have mines_known in them.
 
         This function should:
             1) mark the cell as a move that has been made
             2) mark the cell as safe
             3) add a new sentence to the AI's knowledge base
                based on the value of `cell` and `count`
-            4) mark any additional cells as safe or as mines
+            4) mark any additional cells as safe or as mines_known
                if it can be concluded based on the AI's knowledge base
             5) add any new sentences to the AI's knowledge base if they can be inferred from existing knowledge
         """
@@ -473,10 +480,10 @@ class MinesweeperAI():
             print(new_sentence)
 
         """
-        4) mark any additional cells as safe or as mines
+        4) mark any additional cells as safe or as mines_known
                if it can be concluded based on the AI's knowledge base
         """
-        print("4) mark any additional cells as safe or as mines "
+        print("4) mark any additional cells as safe or as mines_known "
               "if it can be concluded based on the AI's knowledge base")
         self.print_knowledge()
 
@@ -490,6 +497,10 @@ class MinesweeperAI():
 
             print("new_safe_cells")
             print(new_safe_cells)
+            print("set(new_safe_cells)")
+            print(set(new_safe_cells))
+
+            self.add_cells_to_knowledge(set(new_safe_cells), 0)
 
             for cell in new_safe_cells:
                 print("Marking safe cells picked on the simple neighbor zeros strategy")
@@ -508,7 +519,7 @@ class MinesweeperAI():
         The move must be known to be safe, and not already a move
         that has been made.
 
-        This function may use the knowledge in self.mines, self.safes_known
+        This function may use the knowledge in self.mines_known, self.safes_known
         and self.moves_made, but should not modify any of those values.
         """
 
@@ -522,6 +533,16 @@ class MinesweeperAI():
 
         for sentence in self.knowledge:
             if sentence.count == 0:
+                # THE NEIGHBOR ZEROS STRATEGY
+                # This should do the trick for not uncovering unnecessary cells
+                if len(sentence.cells) > 0:
+                    for cell in sentence.cells:
+                        if (cell not in self.mines_known_by_ai and cell not in self.mines_known
+                                and cell not in self.moves_made):
+                            print("THE NEIGHBOR ZEROS STRATEGY")
+                            return cell
+
+                # IF CANNOT BE CONCLUDED, DO PREP FOR ANOTHER STRATEGIES
                 if len(sentence.cells) > 0:
                     print("if sentence.count:sentence.cells {}".format(sentence.cells))
                     new_safe_cells = list(sentence.cells)[0]
@@ -554,40 +575,37 @@ class MinesweeperAI():
             print(safe_choices)
 
             for safe_choice in safe_choices:
-                for sentence in self.knowledge:
-                    print("list(sentence.cells)[0]")
-                    print(safe_choice)
-                    print("self.moves_made")
-                    print(self.moves_made)
-                    if safe_choice not in self.moves_made:
-                        # TODO: Why are wrong cells identified as a safe???
-                        # print("safe_choice:")
-                        # print(safe_choice)
-                        # print("sentence.cells:")
-                        # print(sentence.cells)
-                        for sentence_2 in self.knowledge:
-                            # print("safe_choice[0], safe_choice[1] - 1:")
-                            # print(safe_choice[0], safe_choice[1] - 1)
 
-                            tested_tuple = (safe_choice[0], safe_choice[1] - 1)
-                            cells = self.cross_strategy(sentence_2, tested_tuple)
-                            if cells is not None:
-                                return cells
+                if safe_choice not in self.moves_made:
+                    # print("safe_choice:")
+                    # print(safe_choice)
+                    # print("sentence.cells:")
+                    # print(sentence.cells)
+                    for sentence_2 in self.knowledge:
+                        # print("safe_choice[0], safe_choice[1] - 1:")
+                        # print(safe_choice[0], safe_choice[1] - 1)
 
-                            tested_tuple = (safe_choice[0], safe_choice[1] + 1)
-                            cells = self.cross_strategy(sentence_2, tested_tuple)
-                            if cells is not None:
-                                return cells
+                        # THE CROSS OF ZEROS STRATEGY
 
-                            tested_tuple = (safe_choice[0] + 1, safe_choice[1])
-                            cells = self.cross_strategy(sentence_2, tested_tuple)
-                            if cells is not None:
-                                return cells
+                        tested_tuple = (safe_choice[0], safe_choice[1] - 1)
+                        cells = self.cross_strategy(sentence_2, tested_tuple)
+                        if cells is not None:
+                            return cells
 
-                            tested_tuple = (safe_choice[0] - 1, safe_choice[1])
-                            cells = self.cross_strategy(sentence_2, tested_tuple)
-                            if cells is not None:
-                                return cells
+                        tested_tuple = (safe_choice[0], safe_choice[1] + 1)
+                        cells = self.cross_strategy(sentence_2, tested_tuple)
+                        if cells is not None:
+                            return cells
+
+                        tested_tuple = (safe_choice[0] + 1, safe_choice[1])
+                        cells = self.cross_strategy(sentence_2, tested_tuple)
+                        if cells is not None:
+                            return cells
+
+                        tested_tuple = (safe_choice[0] - 1, safe_choice[1])
+                        cells = self.cross_strategy(sentence_2, tested_tuple)
+                        if cells is not None:
+                            return cells
 
             for sentence in self.knowledge:
                 # If we know it's zero, then make the move
@@ -600,27 +618,31 @@ class MinesweeperAI():
                         print(sentence.cells)
                         return tuple(list(sentence.cells)[0])
 
-            # MARK AS MINE IF CANNOT MOVE ELSEWHERE
-
-            if len(self.mines) > 0:
-                for mine_cell in self.mines:
-                    if mine_cell not in self.moves_made:
-                        return tuple(list(mine_cell)[0])
-
-            # RANDOM STRATEGY
-            # last resort is simply choose random, because there is no other way to choose
-
+            # RANDOM FROM SAFES STRATEGY
+            print("")
             safe_choices = [[item for item in pair] for pair in safe_choices]
 
-            try:
-                random_index_from_set = random.randrange(safes_set_length)
-            except ValueError:
-                random_index_from_set = 0
+            if len(safe_choices) > 0:
 
-            random_element_from_set = list(safe_choices)[random_index_from_set]
-            print("No other strategy can be used. AI is using random strategy from known safe choices.")
-            print(random_element_from_set)
-            return tuple(random_element_from_set)
+                try:
+                    random_index_from_set = random.randrange(safes_set_length)
+                except ValueError:
+                    random_index_from_set = 0
+
+                random_element_from_set = list(safe_choices)[random_index_from_set]
+                print("Making random move from safe choices.")
+                print(random_element_from_set)
+                return tuple(random_element_from_set)
+
+            # RANDOM FROM NON-MINES STRATEGY
+            # last resort is simply choose random from non-mines, because there is no other way to choose
+            # This differs from the pure random move below
+            random_move = self.make_random_move()
+
+            if random_move not in self.mines_known_by_ai:
+                print("Making random move from known non-mines.")
+                return random_move
+
         else:
             return None
 
@@ -629,7 +651,7 @@ class MinesweeperAI():
         Returns a move to make on the Minesweeper board.
         Should choose randomly among cells that:
             1) have not already been chosen, and
-            2) are not known to be mines
+            2) are not known to be mines_known
         """
         print("make_random_move")
         if len(self.moves_made) < self.width * self.height:
@@ -658,7 +680,7 @@ class MinesweeperAI():
 
                     return added_move
                 else:
-                    options_tried.add(((random_move_i, random_move_j)))
+                    options_tried.add((random_move_i, random_move_j))
 
     def update_knowledge(self, cell):
         self.print_knowledge()
@@ -680,17 +702,17 @@ class MinesweeperAI():
                         # print("knowledge[i].cells: {}".format(knowledge[i].cells))
                         new_cells = knowledge[j].cells.difference(knowledge[i].cells)
                         print("new_cells: {}".format(new_cells))
-                        if len(new_cells) == 2 or len(new_cells) == 0:
-                            if len(new_cells) == 2:
-                                new_cells = list(new_cells)[0]
-                                new_count = knowledge[j].count - knowledge[i].count
+                        if len(new_cells) >= 0:
+                            self.add_new_knowledge_with_new_cells(new_cells, knowledge[i].count, knowledge[j].count, True)
+                            new_count = knowledge[j].count - knowledge[i].count
 
-                                print("new_cells {}".format(new_cells))
-                                print("new_count {}".format(new_count))
+                            print("new_cells {}".format(new_cells))
+                            print("new_count {}".format(new_count))
 
-                                print("update_knowledge.type(new_cells):")
-                                print(type(new_cells))
+                            print("update_knowledge.type(new_cells):")
+                            print(type(new_cells))
 
+                            if new_count > 0:
                                 new_sentence = Sentence(new_cells, new_count)
                                 if new_sentence not in self.knowledge:
                                     print("Adding the calculated cells based on the cell counts:")
@@ -698,10 +720,7 @@ class MinesweeperAI():
                                 print("Updated knowledge:")
                                 self.print_knowledge()
                         else:
-                            print("UNEXPECTED Len of new_cells!!!!")
-                            print(new_cells)
-                            print(len(new_cells))
-                            traceback.print_stack()
+                            raise ValueError("Unexpected length of the cells.")
 
                 if count_control > (self.width * self.height):
                     break
@@ -721,9 +740,20 @@ class MinesweeperAI():
         neighbor_cells = self.get_neighbor_cells(cell, "all")
 
         if neighbor_cells_sum == cell_count:
-            print("Marking mines by the sum of neighbors strategy")
+            print("Marking mines_known by the sum of neighbors strategy")
             for neighbor_cell in neighbor_cells:
-                self.mark_mine(neighbor_cell)
+                self.mines_known_by_ai.add(neighbor_cell)
+
+        # THE CALCULATIONS FROM HW ABOUT SAFES AND MINES:
+        for sentence in self.knowledge:
+            known_mines = sentence.known_mines()
+            for known_mine_cell in known_mines:
+                self.mines_known_by_ai.add(known_mine_cell)
+
+        for sentence in self.knowledge:
+            known_safes = sentence.known_safes()
+            for known_safe_cell in known_safes:
+                self.safes_known.add(known_safe_cell)
 
         # FLAGGED NEIGHBOR STRATEGY
         # IF CELL HAS FLAGGED NEIGHBOR
@@ -761,6 +791,25 @@ class MinesweeperAI():
             else:
                 # print("Tested neighbor cell is not equal to the sentence cell.")
                 return None
+
+    def add_new_knowledge_with_new_cells(self, new_cells, count1, count2, individual=True):
+
+        new_count = count2 - count1
+
+        print("new_cells {}".format(new_cells))
+        print("new_count {}".format(new_count))
+
+        print("update_knowledge.type(new_cells):")
+        print(type(new_cells))
+
+        if new_count > 0:
+            new_sentence = Sentence(new_cells, new_count)
+
+            if new_sentence not in self.knowledge:
+                print("Adding the calculated cells based on the cell counts:")
+                self.knowledge.append(new_sentence)
+            print("Updated knowledge:")
+            self.print_knowledge()
 
     def print_knowledge(self):
         print("------------------------")

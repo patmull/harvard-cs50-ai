@@ -71,7 +71,7 @@ while True:
         rules = [
             "Click a cell to reveal it.",
             "Right-click a cell to mark it as a mine.",
-            "Mark all mines successfully to win!"
+            "Mark all mines_known successfully to win!"
         ]
         for i, rule in enumerate(rules):
             line = smallFont.render(rule, True, WHITE)
@@ -164,6 +164,7 @@ while True:
     left, _, right = pygame.mouse.get_pressed()
 
     # Check for a right-click to toggle flagging
+    # Only human can flag the mines
     if right == 1 and not lost:
         mouse = pygame.mouse.get_pos()
         for i in range(HEIGHT):
@@ -193,7 +194,7 @@ while True:
             if move is None:
                 move = ai.make_random_move()
                 if move is None:
-                    flags = ai.mines.copy()
+                    flags = ai.mines_known.copy()
                     print("No moves left to make.")
                 else:
                     print("No known safe moves, AI making random move.")
