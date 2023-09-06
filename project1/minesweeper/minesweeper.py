@@ -3,6 +3,7 @@ import random
 import traceback
 import iteration_utilities
 
+
 class Minesweeper():
     """
     Minesweeper game representation
@@ -101,13 +102,19 @@ class Sentence():
 
         self.cells = set()
         print("Sentence.cells: {}".format(cells))
-        if len(cells) == 2:
-            self.cells.add(cells)
-            print("self.cells {}".format(self.cells))
-        elif len(cells) == 0:
-            print("Set empty. Not adding anything.")
-        elif len(cells) != 0 and len(cells) != 2 and len(cells) > 0:
-            self.cells.update(cells)
+        print(type(cells))
+        if isinstance(cells, tuple):
+            if cells not in self.cells:
+                self.cells.add(cells)
+                print("self.cells {}".format(self.cells))
+        elif isinstance(cells, set):
+            if len(cells) == 0:
+                print("Set empty. Not adding anything.")
+            elif len(cells) > 0:
+                if cells not in self.cells:
+                    self.cells.update(cells)
+            else:
+                raise ValueError("Unexpected length of a cell!")
         else:
             raise ValueError("Unexpected length of a cell!")
 
@@ -220,6 +227,15 @@ class MinesweeperAI():
         # List of sentences about the game known to be true
         self.knowledge = []
 
+    def get_minesweeper_board(self):
+        board = [[0 for width_index in range(self.width)] for height_index in range(self.height)]
+
+        for sentence in self.knowledge:
+            for cell in sentence.cells:
+                board[cell[0]][cell[1]] = sentence.count
+
+        return board
+
     def mark_mine(self, cell):
         """
         Marks a cell as a mine, and updates all knowledge
@@ -271,7 +287,6 @@ class MinesweeperAI():
         # UPDATING THE KNOWLEDGE
 
         # Add new knowledge (multiple cells sentences)
-
 
         # remove the empty sets from the knowledge
         updated_knowledge = []
@@ -485,7 +500,7 @@ class MinesweeperAI():
         """
         print("4) mark any additional cells as safe or as mines_known "
               "if it can be concluded based on the AI's knowledge base")
-        self.print_knowledge()
+        # # self.print_knowledge()
 
         # Simplest strategy: pick the cells around the zero
         if count == 0:
@@ -513,6 +528,7 @@ class MinesweeperAI():
         # Note that any time that you make any change to your AI’s knowledge,
         # it may be possible to draw new inferences that weren’t possible before.
         # Be sure that those new inferences are added to the knowledge base if it is possible to do so.
+
     def make_safe_move(self):
         """
         Returns a safe cell to choose on the Minesweeper board.
@@ -683,7 +699,7 @@ class MinesweeperAI():
                     options_tried.add((random_move_i, random_move_j))
 
     def update_knowledge(self, cell):
-        self.print_knowledge()
+        # self.print_knowledge()
         knowledge = self.knowledge.copy()
         print("----------------------")
         print("knowledge:")
@@ -694,23 +710,25 @@ class MinesweeperAI():
 
         for i in range(len(knowledge)):
             for j in range(len(knowledge)):
-                count_control += 1
+                # count_control += 1
                 if len(knowledge[i].cells) > 0 and len(knowledge[j].cells) > 0:
                     if knowledge[i].cells.issubset(knowledge[j].cells):
-                        self.print_knowledge()
+                        # self.print_knowledge()
                         # print("knowledge[j].cells: {}".format(knowledge[j].cells))
                         # print("knowledge[i].cells: {}".format(knowledge[i].cells))
                         new_cells = knowledge[j].cells.difference(knowledge[i].cells)
                         print("new_cells: {}".format(new_cells))
+                        print(len(new_cells))
                         if len(new_cells) >= 0:
-                            self.add_new_knowledge_with_new_cells(new_cells, knowledge[i].count, knowledge[j].count, True)
+                            self.add_new_knowledge_with_new_cells(new_cells, knowledge[i].count, knowledge[j].count,
+                                                                  True)
                             new_count = knowledge[j].count - knowledge[i].count
 
-                            print("new_cells {}".format(new_cells))
-                            print("new_count {}".format(new_count))
+                            # print("new_cells {}".format(new_cells))
+                            # print("new_count {}".format(new_count))
 
-                            print("update_knowledge.type(new_cells):")
-                            print(type(new_cells))
+                            # print("update_knowledge.type(new_cells):")
+                            # print(type(new_cells))
 
                             if new_count > 0:
                                 new_sentence = Sentence(new_cells, new_count)
@@ -718,13 +736,13 @@ class MinesweeperAI():
                                     print("Adding the calculated cells based on the cell counts:")
                                     self.knowledge.append(new_sentence)
                                 print("Updated knowledge:")
-                                self.print_knowledge()
+                                # self.print_knowledge()
                         else:
                             raise ValueError("Unexpected length of the cells.")
-
+                """
                 if count_control > (self.width * self.height):
                     break
-
+                """
         # Searching for the cell in the knowledge
         found_cell = tuple()
         cell_count = None
@@ -776,6 +794,45 @@ class MinesweeperAI():
                         for neighbor_cell in neighbor_cells:
                             self.mark_safe(neighbor_cell)
 
+        # Patterns finding strategy (https://www.youtube.com/watch?v=6vcSO7h6Nt0)
+        self.search_patterns()
+
+    def search_patterns(self):
+        board = self.get_minesweeper_board()
+
+        from scipy.ndimage import convolve
+
+        # 2 3 2 pattern
+        """
+        kernel = [[1, 1, 1],
+                  [0, 0, 0],
+                  [0, 0, 0]]
+        convolution = convolve(board, kernel, mode='constant')
+        print("convolution:")
+        print(convolution)
+        """
+
+        pattern = [[2, 3, 2]]
+        self.check_pattern(board, pattern)
+
+    def check_pattern(self, matrix, pattern):
+        # TODO: Return the cells, not the boolean!
+
+        # Check horizontally
+        for row in matrix:
+            for i in range(len(row) - 2):
+                if row[i:i + 3] == pattern[0]:
+                    return True
+
+        # Check vertically
+        for col in range(len(matrix[0])):
+            for i in range(len(matrix) - 2):
+                column_slice = [matrix[j][col] for j in range(i, i + 3)]
+                if column_slice == pattern[0]:
+                    return True
+
+        return False
+
     def cross_strategy(self, sentence, tested_neighbor_tuple):
         tested_cells = list(sentence.cells)
         for tested_cell in tested_cells:
@@ -799,17 +856,17 @@ class MinesweeperAI():
         print("new_cells {}".format(new_cells))
         print("new_count {}".format(new_count))
 
-        print("update_knowledge.type(new_cells):")
-        print(type(new_cells))
-
-        if new_count > 0:
+        if new_count >= 0:
             new_sentence = Sentence(new_cells, new_count)
+
+            print("add_new_knowledge_with_new_cells.new_sentence:")
+            print(new_sentence)
 
             if new_sentence not in self.knowledge:
                 print("Adding the calculated cells based on the cell counts:")
                 self.knowledge.append(new_sentence)
             print("Updated knowledge:")
-            self.print_knowledge()
+            # self.print_knowledge()
 
     def print_knowledge(self):
         print("------------------------")
