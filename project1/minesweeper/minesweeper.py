@@ -7,6 +7,8 @@ import iteration_utilities
 class Minesweeper:
     """
     Minesweeper game representation
+
+    Good resource for the moves: https://minesweeper.online/help/patterns
     """
 
     def __init__(self, height=8, width=8, mines=8):
@@ -761,8 +763,10 @@ class MinesweeperAI:
                     print("neighbor cells: {}".format(neighbor_cells))
                     free_neighbor_cells = set(neighbor_cells) - self.moves_made
                     print("free_neighbor_cells: {}".format(free_neighbor_cells))
-                    if cell_count == len(neighbor_cells):
-                        self.add_mines_known_by_ai(free_neighbor_cells)
+                    if cell_count == len(free_neighbor_cells) and len(free_neighbor_cells) > 0:
+                        print("Adding to mines: {}".format(free_neighbor_cells))
+                        for free_neighbor_cell in free_neighbor_cells:
+                            self.add_mines_known_by_ai(free_neighbor_cell)
 
             # SUM OF NEIGHBORS STRATEGY
             # IF SUM OF THE CELL'S NEIGHBORS IS EQUAL TO THE COUNT OF THE GIVEN CELL, ALL NEIGHBOURS ARE MINES
