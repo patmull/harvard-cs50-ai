@@ -8,6 +8,7 @@ HEIGHT = 8
 WIDTH = 8
 MINES = 8
 
+game = Minesweeper(HEIGHT, WIDTH, MINES)
 # Colors
 BLACK = (0, 0, 0)
 GRAY = (180, 180, 180)
@@ -38,7 +39,6 @@ mine = pygame.image.load("assets/images/mine.png")
 mine = pygame.transform.scale(mine, (cell_size, cell_size))
 
 # Create game and AI agent
-game = Minesweeper(height=HEIGHT, width=WIDTH, mines=MINES)
 ai = MinesweeperAI(height=HEIGHT, width=WIDTH, mines_flagged=game.mines_found)
 
 # Keep track of revealed cells, flagged cells, and if a mine was hit
@@ -236,5 +236,6 @@ while True:
             print("type(move):")
             print(type(move))
             ai.add_knowledge(move, nearby)
+            ai.update_board(move, nearby)
 
     pygame.display.flip()
