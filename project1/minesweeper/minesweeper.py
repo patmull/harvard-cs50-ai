@@ -748,21 +748,25 @@ class MinesweeperAI:
         # Searching for the cell in the knowledge
         cell_count = None
         for sentence in self.knowledge:
-            # print("sentence.cells:")
-            # print(sentence.cells)
-            # print("cell")
-            # print(cell)
 
-            if sentence.cells == {cell}:
-                cell_count = sentence.count
+            neighbor_cells = self.get_neighbor_cells(cell, "all")
+            for neighbor_cell in neighbor_cells:
+                if sentence.cells == {neighbor_cell}:
+                    cell_count = sentence.count
 
-            # TODO: FOX THE MINE DETECTION. NO TRUE MINES ARE DETECTED NO
+                    # BASIC MINES CALCULATION STRATEGY
+                    # If a number is touching the same number of cells,
+                    # then these cells are all mines.
+                    print("cell_count: {}".format(cell_count))
+                    print("neighbor cells: {}".format(neighbor_cells))
+                    free_neighbor_cells = set(neighbor_cells) - self.moves_made
+                    print("free_neighbor_cells: {}".format(free_neighbor_cells))
+                    if cell_count == len(neighbor_cells):
+                        self.add_mines_known_by_ai(free_neighbor_cells)
 
             # SUM OF NEIGHBORS STRATEGY
-            # IF SUM OF THE CELL'S NEIGHBORS IS EQUAL TO THE COUNT OF THE GIVEN CELL, NEIGHBOUR ARE MINES
-
+            # IF SUM OF THE CELL'S NEIGHBORS IS EQUAL TO THE COUNT OF THE GIVEN CELL, ALL NEIGHBOURS ARE MINES
             neighbor_cells_sum = self.get_neighbor_cells_sum(cell)
-            neighbor_cells = self.get_neighbor_cells(cell, "all")
 
             print("cell: {}".format(cell))
             print("neighbor_cells_sum: {}".format(neighbor_cells_sum))
@@ -820,6 +824,7 @@ class MinesweeperAI:
 
         # Patterns finding strategy (https://www.youtube.com/watch?v=6vcSO7h6Nt0)
         self.search_patterns()
+        self.update_mines_known_by_ai()
 
     def search_patterns(self):
         board = self.get_minesweeper_board()
@@ -868,6 +873,7 @@ class MinesweeperAI:
         """
 
     def add_mines_known_by_ai(self, new_mine_cell):
+
         print("add_mines_known_by_ai:self.safes_known: {}".format(self.safes_known))
 
         if new_mine_cell not in self.mines_known_by_ai and self.mine_is_not_false_negative(new_mine_cell):
@@ -875,14 +881,31 @@ class MinesweeperAI:
             print("Adding new known mine cell: {}".format(new_mine_cell))
             self.mines_known_by_ai.add(new_mine_cell)
 
-    def mine_is_not_false_negative(self, cell_to_check):
+    def mine_is_not_false_negative(self, cells_to_check):
         try:
-            if set(cell_to_check).intersection(self.moves_made) or set(cell_to_check).intersection(self.safes_known):
+            if isinstance(cells_to_check, tuple):
+                cells = set()
+                cells.add(cells_to_check)
+            elif isinstance(cells_to_check, list):
+                cells = list(cells_to_check)
+            elif isinstance(cells_to_check, set):
+                cells = cells_to_check
+            else:
+                raise ValueError("Unexpected type of the 'cells_to_check' variable.")
+
+            print("cells: {}".format(cells))
+            intersection_1 = set(cells).intersection(self.moves_made)
+            intersection_2 = set(cells).intersection(self.safes_known)
+            print("intersection_1: {}".format(intersection_1))
+            print("intersection_2: {}".format(intersection_2))
+
+            if intersection_1 or intersection_2:
                 return False
             else:
                 return True
+
         except TypeError as e:
-            print("cell_to_check: {}".format(cell_to_check))
+            print("cells_to_check: {}".format(cells_to_check))
             raise e
 
     def check_pattern(self, matrix, pattern):
@@ -897,43 +920,62 @@ class MinesweeperAI:
                     print("Pattern found horizontally")
                     if pattern == [1, 2, 1]:
                         print("Neighbors upper:")
+                        new_mine_cell = (row_number - 1, i)
+                        print("New mine cell: {}".format(new_mine_cell))
                         if i-1 > 0 and i < self.width:
-                            new_mine_cell = (row_number-1, i)
                             self.add_mines_known_by_ai(new_mine_cell)
-                        if i-1 > 0 and i+len(pattern)-1 < self.width:
-                            new_mine_cell = (row_number - 1, i + len(pattern) - 1)
-                            self.add_mines_known_by_ai(new_mine_cell)
+
                         print("Neighbors lower:")
-                        if i+1 < self.height and i < self.width:
-                            new_mine_cell = (row_number+1, i)
+
+                        new_mine_cell = (row_number - 1, i + (len(pattern) - 1))
+                        print("new_mine_cell: {}".format(new_mine_cell))
+                        if i-1 > 0 and i+(len(pattern)-1) < self.width:
                             self.add_mines_known_by_ai(new_mine_cell)
-                        if i+1 < self.height and i+len(pattern)-1 < self.width:
-                            print(row_number+1, i+len(pattern)-1)
-                            new_mine_cell = (row_number+1, i+len(pattern)-1)
+
+                        new_mine_cell = (row_number+1, i)
+                        print("new_mine_cell: {}".format(new_mine_cell))
+                        if i+1 < self.height and i < self.width:
+                            self.add_mines_known_by_ai(new_mine_cell)
+
+                        new_mine_cell = (row_number + 1, i + (len(pattern) - 1))
+                        print("new_mine_cell: {}".format(new_mine_cell))
+                        if i+1 < self.height and i+(len(pattern)-1) < self.width:
                             self.add_mines_known_by_ai(new_mine_cell)
 
         # Check vertically
         for col in range(len(matrix[0])):
-            for i in range(len(matrix) - len(pattern)-1):
+            print("len(matrix):")
+            print(len(matrix))
+            for i in range(len(matrix) - (len(pattern)-1)):
                 column_slice = [matrix[j][col] for j in range(i, i + len(pattern))]
+                print("col: {}, i: {}, i + len(pattern): {}".format(col, i, i + len(pattern)))
+                print("column_slice: {}".format(column_slice))
                 if column_slice == pattern:
                     print("Pattern found vertically")
                     print("col: {}, i: {}".format(col, i))
                     print("col: {}, i + len(pattern): {}".format(col, i + len(pattern)))
+
                     print("Neighbors right.")
+                    new_mine_cell = (i, col + 1)
+                    print("new_mine_cell: {}".format(new_mine_cell))
                     if i < self.height and col+1 < self.width:
-                        new_mine_cell = (i, col+1)
                         self.add_mines_known_by_ai(new_mine_cell)
+
+                    new_mine_cell = (i + len(pattern) - 1, col+1)
+                    print("new_mine_cell: {}".format(new_mine_cell))
                     if i + len(pattern) - 1 < self.height and col+1 < self.width:
-                        new_mine_cell = (i + len(pattern) - 1, col+1)
                         self.add_mines_known_by_ai(new_mine_cell)
 
                     print("Neighbors left:")
+
+                    new_mine_cell = (i, col - 1)
+                    print("new_mine_cell: {}".format(new_mine_cell))
                     if i < self.height and col-1 > 0:
-                        new_mine_cell = (i, col-1)
                         self.add_mines_known_by_ai(new_mine_cell)
+
+                    new_mine_cell = (i + len(pattern) - 1, col - 1)
+                    print("new_mine_cell: {}".format(new_mine_cell))
                     if i + len(pattern) - 1 < self.height and col-1 > 0:
-                        new_mine_cell = (i + len(pattern) - 1, col-1)
                         self.add_mines_known_by_ai(new_mine_cell)
 
     def find_pattern_indices(self, matrix, pattern):
@@ -1074,6 +1116,19 @@ class MinesweeperAI:
 
         self.board[move[0]][move[1]] = count
         # print("New board: {}".format(self.board))
+
+    def update_mines_known_by_ai(self):
+        intersection = self.mines_known_by_ai.intersection(self.mines_known)
+        self.mines_known_by_ai = self.mines_known_by_ai - intersection
+
+        intersection = self.mines_known_by_ai.intersection(self.moves_made)
+        self.mines_known_by_ai = self.mines_known_by_ai - intersection
+
+        intersection = self.mines_known_by_ai.intersection(self.safes_known)
+        self.mines_known_by_ai = self.mines_known_by_ai - intersection
+
+        intersection = self.mines_known_by_ai.intersection(self.mines_flagged)
+        self.mines_known_by_ai = self.mines_known_by_ai - intersection
 
 
 def powerset(iterable):
