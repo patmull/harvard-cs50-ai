@@ -234,6 +234,7 @@ class MinesweeperAI:
 
         # neighbourhoods around cells with high values
         # TODO: Add another set for >0
+        self.suspected_mines_small_danger = set()
         self.suspected_mines_mild_danger = set()
         self.suspected_mines_big_danger = set()
         self.suspected_mines_very_big_danger = set()
@@ -663,37 +664,40 @@ class MinesweeperAI:
                 print("Making a move based on the RANDOM FROM SAFES STRATEGY.")
                 return get_random_item_from_set(safe_choices)
 
-
         # RANDOM FROM NON-SUSPECTED AND SAFES
-        print("RANDOM FROM NON-SUSPECTED AND SAFES...")
-        print("safe_choices: {}".format(self.safes_known))
-        print("self.suspected_mines_mild_danger: {}".format(self.suspected_mines_mild_danger))
-        safe_and_non_suspected_choices = self.safes_known - self.suspected_mines_mild_danger - self.moves_made
-        print("safe_and_non_suspected_choices: {}".format(safe_and_non_suspected_choices))
-        print(safe_choices)
-        print(self.suspected_mines_mild_danger)
-        suspected_cells_filtered_from_moves_made = set()
-        for cell in safe_and_non_suspected_choices:
-            if cell not in self.moves_made:
-                suspected_cells_filtered_from_moves_made.add(cell)
-        if len(suspected_cells_filtered_from_moves_made) > 0:
-            print("Making a move based on the RANDOM FROM NON-SUSPECTED strategy.")
-            random_cell_from_non_suspected = get_random_item_from_set(suspected_cells_filtered_from_moves_made)
-            return random_cell_from_non_suspected
-
-        # RANDOM FROM NON-SUSPECTED
-        # NOT FROM LEVEL MILD
-        safer_random = self.get_safer_random(self.suspected_mines_mild_danger)
+        safer_random = self.get_from_safes_and_non_suspected(self.suspected_mines_very_big_danger)
         if safer_random:
             return safer_random
 
+        safer_random = self.get_from_safes_and_non_suspected(self.suspected_mines_big_danger)
+        if safer_random:
+            return safer_random
+
+        safer_random = self.get_from_safes_and_non_suspected(self.suspected_mines_mild_danger)
+        if safer_random:
+            return safer_random
+
+        safer_random = self.get_from_safes_and_non_suspected(self.suspected_mines_small_danger)
+        if safer_random:
+            return safer_random
+
+        # RANDOM FROM NON-SUSPECTED
+        # NOT FROM LEVEL VERY BIG DANGER
+        safer_random = self.get_safer_random(self.suspected_mines_very_big_danger)
+        if safer_random:
+            return safer_random
         # NOT FROM LEVEL BIG DANGER
         safer_random = self.get_safer_random(self.suspected_mines_big_danger)
         if safer_random:
             return safer_random
 
-        # NOT FROM LEVEL VERY BIG DANGER
-        safer_random = self.get_safer_random(self.suspected_mines_very_big_danger)
+        # NOT FROM LEVEL MILD
+        safer_random = self.get_safer_random(self.suspected_mines_mild_danger)
+        if safer_random:
+            return safer_random
+
+        # NOT FROM LEVEL SMALL
+        safer_random = self.get_safer_random(self.suspected_mines_small_danger)
         if safer_random:
             return safer_random
 
@@ -713,7 +717,6 @@ class MinesweeperAI:
             1) have not already been chosen, and
             2) are not known to be mines_known
         """
-        print("make_random_move")
         if len(self.moves_made) < self.width * self.height:
 
             options_tried = set()
@@ -908,8 +911,9 @@ class MinesweeperAI:
     def get_safer_random(self, suspected_cells):
         cells_tried = set()
         num_of_cells_tried_repeatedly = 0
-        REPEATED_LIMIT = 100
+        REPEATED_LIMIT = 300
         previous_added = None
+        print("Searching for an option safer than a random move.")
         while num_of_cells_tried_repeatedly < REPEATED_LIMIT:
             random_move = self.make_random_move()
 
@@ -926,7 +930,7 @@ class MinesweeperAI:
                 if random_move not in cells_tried:
                     cells_tried.add(random_move)
                     previous_added = random_move
-                    print("# of cells tried: {}".format(len(cells_tried)))
+                    # print("# of cells tried: {}".format(len(cells_tried)))
                 if random_move == previous_added:
                     num_of_cells_tried_repeatedly += 1
 
@@ -939,8 +943,8 @@ class MinesweeperAI:
         self.check_pattern(board, pattern)
         pattern = [1, 2, 2, 1]
         self.check_pattern(board, pattern)
-        # Testing pattern
-        # pattern = [1, 1, 1]
+        pattern = [1, 1, 1]
+        self.check_pattern(board, pattern)
 
         # from scipy.ndimage import convolve
 
@@ -1048,6 +1052,12 @@ class MinesweeperAI:
                         new_mine_cell = (row_number - 1, i + (len(pattern) - 2))
                         print("pattern [1, 2, 2, 1]")
                         print("new_mine_cell: {}".format(new_mine_cell))
+                    elif pattern == [1, 1, 1]:
+                        # Add this to safes
+                        # Remove this from ai_mines_known
+                        new_mine_cell = (row_number - 1, i + (len(pattern) - 1))
+                        self.safes_known.add(new_mine_cell)
+                        self.mines_known_by_ai.remove(new_mine_cell)
                     else:
                         raise ValueError("Pattern is not valid.")
 
@@ -1101,12 +1111,18 @@ class MinesweeperAI:
                         new_mine_cell = (i + 1, col + 1)
                         print("pattern [1, 2, 2, 1]")
                         print("new_mine_cell: {}".format(new_mine_cell))
+                    elif pattern == [1, 1, 1]:
+                        new_mine_cell = (i, col + 1)
                     else:
                         raise ValueError("Pattern is not valid.")
 
                     print("new_mine_cell: {}".format(new_mine_cell))
                     if i < self.height and col + 1 < self.width:
-                        self.add_mines_known_by_ai(new_mine_cell)
+                        if pattern == [1, 1, 1]:
+                            self.safes_known.add(new_mine_cell)
+                            self.mines_known_by_ai.remove(new_mine_cell)
+                        else:
+                            self.add_mines_known_by_ai(new_mine_cell)
 
                     if pattern == [1, 2, 1]:
                         new_mine_cell = (i + len(pattern) - 1, col + 1)
@@ -1133,7 +1149,11 @@ class MinesweeperAI:
 
                     print("new_mine_cell: {}".format(new_mine_cell))
                     if i < self.height and col - 1 > 0:
-                        self.add_mines_known_by_ai(new_mine_cell)
+                        if pattern == [1, 1, 1]:
+                            self.safes_known.add(new_mine_cell)
+                            self.mines_known_by_ai.remove(new_mine_cell)
+                        else:
+                            self.add_mines_known_by_ai(new_mine_cell)
 
                     if pattern == [1, 2, 1]:
                         new_mine_cell = (i + len(pattern) - 1, col - 1)
@@ -1300,6 +1320,23 @@ class MinesweeperAI:
         intersection = self.mines_known_by_ai.intersection(self.mines_flagged)
         self.mines_known_by_ai = self.mines_known_by_ai - intersection
 
+    def get_from_safes_and_non_suspected(self, suspected_cells):
+        print("RANDOM FROM NON-SUSPECTED AND SAFES...")
+        print("safe_choices: {}".format(self.safes_known))
+        print("self.suspected_mines_mild_danger: {}".format(suspected_cells))
+        safe_and_non_suspected_choices = self.safes_known - suspected_cells - self.moves_made
+        print("safe_and_non_suspected_choices: {}".format(safe_and_non_suspected_choices))
+        print(suspected_cells)
+        suspected_cells_filtered_from_moves_made = set()
+        for cell in safe_and_non_suspected_choices:
+            if cell not in self.moves_made:
+                suspected_cells_filtered_from_moves_made.add(cell)
+        if len(suspected_cells_filtered_from_moves_made) > 0:
+            print("Making a move based on the RANDOM FROM NON-SUSPECTED strategy.")
+            random_cell_from_non_suspected = get_random_item_from_set(suspected_cells_filtered_from_moves_made)
+            return random_cell_from_non_suspected
+
+        return False
 
 def powerset(iterable):
     s = list(iterable)
