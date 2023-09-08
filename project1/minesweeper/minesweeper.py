@@ -217,7 +217,7 @@ class MinesweeperAI:
         else:
             self.mines_flagged = mines_flagged
 
-        self.board = [[None]*width for i in range(height)]
+        self.board = [[None] * width for i in range(height)]
 
         self.height = height
         self.width = width
@@ -231,6 +231,12 @@ class MinesweeperAI:
         self.mines_known_by_ai = set()
         # We know these are safe, but don't know the exact value of those
         self.safes_known = set()
+
+        # neighbourhoods around cells with high values
+        # TODO: Add another set for >0
+        self.suspected_mines_mild_danger = set()
+        self.suspected_mines_big_danger = set()
+        self.suspected_mines_very_big_danger = set()
 
         # List of sentences about the game known to be true
         self.knowledge = []
@@ -580,25 +586,28 @@ class MinesweeperAI:
         print("self.moves_made")
         print(self.moves_made)
 
-        if len(safes_known_from_knowledge) == 0:
-            return None
-
         # Filter moves already made
         safe_choices = set()
-        for safe_cell in safes_known_from_knowledge:
-            if safe_cell not in self.moves_made:
-                safe_choices.add(safe_cell)
 
-        for safe_cell in self.safes_known:
-            if safe_cell not in self.moves_made:
-                safe_choices.add(safe_cell)
+        if len(safes_known_from_knowledge) > 0:
 
-        print("safe_choices")
-        print(safe_choices)
+            for safe_cell in safes_known_from_knowledge:
+                if safe_cell not in self.moves_made:
+                    safe_choices.add(safe_cell)
+
+            for safe_cell in self.safes_known:
+                if safe_cell not in self.moves_made:
+                    safe_choices.add(safe_cell)
+
+            print("safe_choices:")
+            print(safe_choices)
+        else:
+            print("safes_known_from_knowledge is zero, cannot use any knowledge.")
+            return None
 
         if len(safe_choices) > 0:
-            safes_set_length = len(safe_choices) - 1
-            print("safe_choices")
+
+            print("safe_choices:")
             print(safe_choices)
 
             for safe_choice in safe_choices:
@@ -636,42 +645,66 @@ class MinesweeperAI:
 
             for sentence in self.knowledge:
                 # If we know it's zero, then make the move
+                # ALREADY CONCLUDED IT IS ZERO
                 print("sentence.cells[0]")
                 print(list(sentence.cells)[0])
                 print("self.moves_made: {}".format(self.moves_made))
                 if list(sentence.cells)[0] not in self.moves_made:
                     if sentence.count == 0:
-                        print("Based on the pick zero immediately strategy, AI chose:")
+                        print("Making a move based on the pick zero immediately strategy, AI chose:")
                         print(sentence.cells)
                         return tuple(list(sentence.cells)[0])
 
+        if len(safe_choices) > 0:
             # RANDOM FROM SAFES STRATEGY
-            print("")
             safe_choices = [[item for item in pair] for pair in safe_choices]
 
             if len(safe_choices) > 0:
+                print("Making a move based on the RANDOM FROM SAFES STRATEGY.")
+                return get_random_item_from_set(safe_choices)
 
-                try:
-                    random_index_from_set = random.randrange(safes_set_length)
-                except ValueError:
-                    random_index_from_set = 0
 
-                random_element_from_set = list(safe_choices)[random_index_from_set]
-                print("Making random move from safe choices.")
-                print(random_element_from_set)
-                return tuple(random_element_from_set)
+        # RANDOM FROM NON-SUSPECTED AND SAFES
+        print("RANDOM FROM NON-SUSPECTED AND SAFES...")
+        print("safe_choices: {}".format(self.safes_known))
+        print("self.suspected_mines_mild_danger: {}".format(self.suspected_mines_mild_danger))
+        safe_and_non_suspected_choices = self.safes_known - self.suspected_mines_mild_danger - self.moves_made
+        print("safe_and_non_suspected_choices: {}".format(safe_and_non_suspected_choices))
+        print(safe_choices)
+        print(self.suspected_mines_mild_danger)
+        suspected_cells_filtered_from_moves_made = set()
+        for cell in safe_and_non_suspected_choices:
+            if cell not in self.moves_made:
+                suspected_cells_filtered_from_moves_made.add(cell)
+        if len(suspected_cells_filtered_from_moves_made) > 0:
+            print("Making a move based on the RANDOM FROM NON-SUSPECTED strategy.")
+            random_cell_from_non_suspected = get_random_item_from_set(suspected_cells_filtered_from_moves_made)
+            return random_cell_from_non_suspected
 
-            # RANDOM FROM NON-MINES STRATEGY
-            # last resort is simply choose random from non-mines, because there is no other way to choose
-            # This differs from the pure random move below
-            random_move = self.make_random_move()
+        # RANDOM FROM NON-SUSPECTED
+        # NOT FROM LEVEL MILD
+        safer_random = self.get_safer_random(self.suspected_mines_mild_danger)
+        if safer_random:
+            return safer_random
 
-            if random_move not in self.mines_known_by_ai:
-                print("Making random move from known non-mines.")
-                return random_move
+        # NOT FROM LEVEL BIG DANGER
+        safer_random = self.get_safer_random(self.suspected_mines_big_danger)
+        if safer_random:
+            return safer_random
 
-        else:
-            return None
+        # NOT FROM LEVEL VERY BIG DANGER
+        safer_random = self.get_safer_random(self.suspected_mines_very_big_danger)
+        if safer_random:
+            return safer_random
+
+        # RANDOM BUT NOT FROM KNOWN MINES
+        # last resort is simply choose random from non-mines, because there is no other way to choose
+        # This differs from the pure random move below
+        safer_random = self.get_safer_random({})
+        if safer_random:
+            return safer_random
+
+        return None
 
     def make_random_move(self):
         """
@@ -698,7 +731,6 @@ class MinesweeperAI:
                         return random_move_i, random_move_j
 
                 # We pick randomly but only those which are in safe
-
                 if ((random_move_i, random_move_j) not in self.moves_made
                         and (random_move_i, random_move_j) in self.safes_known):
                     print("Random move:")
@@ -717,6 +749,8 @@ class MinesweeperAI:
         for sentence in knowledge:
             print(sentence)
         print("-----------------------")
+
+        neighbor_cells = self.get_neighbor_cells(cell, "all")
 
         for sentence in knowledge:
             for sentence_j in knowledge:
@@ -751,7 +785,66 @@ class MinesweeperAI:
         cell_count = None
         for sentence in self.knowledge:
 
-            neighbor_cells = self.get_neighbor_cells(cell, "all")
+            if len(sentence.cells) == 1:
+                sentence_cell = list(sentence.cells)[0]
+
+                # SUSPECTED
+                # TODO: Split this into the >2, >3, >4 and pick first the ones from the lower risk category
+                suspected_neighbour_cells_cell_from_knowledge = self.get_neighbor_cells(sentence_cell, "all")
+
+                if sentence.count > 1:
+                    for neighbor_cell_suspected in suspected_neighbour_cells_cell_from_knowledge:
+                        print("neighbor_cell_suspected: {}".format(neighbor_cell_suspected))
+                        if (neighbor_cell_suspected not in self.moves_made
+                                and neighbor_cell_suspected not in self.mines_known
+                                and neighbor_cell_suspected not in self.mines_known_by_ai
+                        ):
+                            self.suspected_mines_mild_danger.add(neighbor_cell_suspected)
+                            print("self.suspected_mines_mild_danger: {}".format(self.suspected_mines_mild_danger))
+
+                if sentence.count > 2:
+                    for neighbor_cell_suspected in suspected_neighbour_cells_cell_from_knowledge:
+                        print("neighbor_cell_suspected: {}".format(neighbor_cell_suspected))
+                        if (neighbor_cell_suspected not in self.moves_made
+                                and neighbor_cell_suspected not in self.mines_known
+                                and neighbor_cell_suspected not in self.mines_known_by_ai
+                        ):
+                            self.suspected_mines_big_danger.add(neighbor_cell_suspected)
+                            print("self.suspected_mines_big_danger: {}".format(self.suspected_mines_mild_danger))
+
+                if sentence.count > 3:
+                    for neighbor_cell_suspected in suspected_neighbour_cells_cell_from_knowledge:
+                        print("neighbor_cell_suspected: {}".format(neighbor_cell_suspected))
+                        if (neighbor_cell_suspected not in self.moves_made
+                                and neighbor_cell_suspected not in self.mines_known
+                                and neighbor_cell_suspected not in self.mines_known_by_ai
+                        ):
+                            self.suspected_mines_very_big_danger.add(neighbor_cell_suspected)
+                            print("self.suspected_mines_very_big_danger: {}".format(self.suspected_mines_mild_danger))
+
+                # SUM OF NEIGHBORS STRATEGY
+                # IF SUM OF THE CELL'S NEIGHBORS IS EQUAL TO THE COUNT OF THE GIVEN CELL, ALL NEIGHBOURS ARE MINES
+                neighbor_cells_sum = self.get_neighbor_cells_sum(sentence_cell)
+
+                print("cell: {}".format(cell))
+                print("neighbor_cells_sum: {}".format(neighbor_cells_sum))
+                print("neighbor_cells: {}".format(neighbor_cells))
+
+                print("cell_count: {}".format(cell_count))
+                if neighbor_cells_sum == sentence.count:
+                    for neighbor_cell in neighbor_cells:
+                        if not self.mine_is_not_false_negative({neighbor_cell}):
+                            print(neighbor_cells)
+                            print("These are false negative. Not a mines!")
+                        else:
+                            print("Marking mines_known by the sum of neighbors strategy")
+                            print(neighbor_cells)
+                            for neighbor_cell_known in neighbor_cells:
+                                if neighbor_cell_known not in self.moves_made:
+                                    self.mines_known_by_ai.add(neighbor_cell_known)
+
+            self.mines_known_by_ai = self.mines_known_by_ai - self.moves_made - self.safes_known
+
             for neighbor_cell in neighbor_cells:
                 if sentence.cells == {neighbor_cell}:
                     cell_count = sentence.count
@@ -768,27 +861,9 @@ class MinesweeperAI:
                         for free_neighbor_cell in free_neighbor_cells:
                             self.add_mines_known_by_ai(free_neighbor_cell)
 
-            # SUM OF NEIGHBORS STRATEGY
-            # IF SUM OF THE CELL'S NEIGHBORS IS EQUAL TO THE COUNT OF THE GIVEN CELL, ALL NEIGHBOURS ARE MINES
-            neighbor_cells_sum = self.get_neighbor_cells_sum(cell)
+                    # TODO: FIX THIS SUM OF NEIGHBORS STRATEGY
 
-            print("cell: {}".format(cell))
-            print("neighbor_cells_sum: {}".format(neighbor_cells_sum))
-            print("neighbor_cells: {}".format(neighbor_cells))
-
-            print("cell_count: {}".format(cell_count))
-            if neighbor_cells_sum == cell_count:
-                if not self.mine_is_not_false_negative(neighbor_cells):
-                    print(neighbor_cells)
-                    print("These are false negative. Not a mines!")
-                else:
-                    print("Marking mines_known by the sum of neighbors strategy")
-                    print(neighbor_cells)
-                    for neighbor_cell in neighbor_cells:
-                        if neighbor_cell not in self.moves_made:
-                            self.mines_known_by_ai.add(neighbor_cell)
-
-            # THE CALCULATIONS FROM HARDWARD ABOUT SAFES AND MINES:
+            # THE CALCULATIONS FROM HARWARD ABOUT SAFES AND MINES:
             known_mines = sentence.known_mines()
 
             if known_mines.intersection(self.moves_made) or known_mines.intersection(self.safes_known):
@@ -830,10 +905,39 @@ class MinesweeperAI:
         self.search_patterns()
         self.update_mines_known_by_ai()
 
+    def get_safer_random(self, suspected_cells):
+        cells_tried = set()
+        num_of_cells_tried_repeatedly = 0
+        REPEATED_LIMIT = 100
+        previous_added = None
+        while num_of_cells_tried_repeatedly < REPEATED_LIMIT:
+            random_move = self.make_random_move()
+
+            if (
+                    random_move not in self.mines_known_by_ai
+                    and random_move not in self.mines_known
+                    and random_move not in self.mines_flagged
+                    and random_move not in suspected_cells
+                    and random_move not in cells_tried
+            ):
+                print("Making a move based on the RANDOM FROM NON-SUSPECTED strategy.")
+                return random_move
+            else:
+                if random_move not in cells_tried:
+                    cells_tried.add(random_move)
+                    previous_added = random_move
+                    print("# of cells tried: {}".format(len(cells_tried)))
+                if random_move == previous_added:
+                    num_of_cells_tried_repeatedly += 1
+
+        return False
+
     def search_patterns(self):
         board = self.get_minesweeper_board()
         print("board: {}".format(board))
         pattern = [1, 2, 1]
+        self.check_pattern(board, pattern)
+        pattern = [1, 2, 2, 1]
         self.check_pattern(board, pattern)
         # Testing pattern
         # pattern = [1, 1, 1]
@@ -903,7 +1007,7 @@ class MinesweeperAI:
             print("intersection_1: {}".format(intersection_1))
             print("intersection_2: {}".format(intersection_2))
 
-            if intersection_1 or intersection_2:
+            if intersection_1 or intersection_2 or cells_to_check in self.moves_made or cells_to_check in self.safes_known:
                 return False
             else:
                 return True
@@ -917,40 +1021,70 @@ class MinesweeperAI:
 
         # Check horizontally
         for row_number, row in enumerate(matrix):
-            print("row: {}, len(row): {}, len(pattern)-1: {}".format(row, len(row), len(pattern)-1))
-            for i in range(len(row) - len(pattern)-1):
+            print("row: {}, len(row): {}, len(pattern)-1: {}".format(row, len(row), len(pattern) - 1))
+            for i in range(len(row) - len(pattern) - 1):
 
                 if row[i:i + len(pattern)] == pattern:
                     print("Pattern found horizontally")
+                    print("Neighbors upper:")
+
                     if pattern == [1, 2, 1]:
-                        print("Neighbors upper:")
                         new_mine_cell = (row_number - 1, i)
-                        print("New mine cell: {}".format(new_mine_cell))
-                        if i-1 > 0 and i < self.width:
-                            self.add_mines_known_by_ai(new_mine_cell)
+                    elif pattern == [1, 2, 2, 1]:
+                        new_mine_cell = (row_number - 1, i + 1)
+                        print("pattern [1, 2, 2, 1]")
+                        print("new_mine_cell: {}".format(new_mine_cell))
+                    else:
+                        raise ValueError("Pattern is not valid.")
+                    print("New mine cell: {}".format(new_mine_cell))
+                    if i - 1 > 0 and i < self.width:
+                        self.add_mines_known_by_ai(new_mine_cell)
 
-                        print("Neighbors lower:")
+                    print("Neighbors lower:")
 
+                    if pattern == [1, 2, 1]:
                         new_mine_cell = (row_number - 1, i + (len(pattern) - 1))
+                    elif pattern == [1, 2, 2, 1]:
+                        new_mine_cell = (row_number - 1, i + (len(pattern) - 2))
+                        print("pattern [1, 2, 2, 1]")
                         print("new_mine_cell: {}".format(new_mine_cell))
-                        if i-1 > 0 and i+(len(pattern)-1) < self.width:
-                            self.add_mines_known_by_ai(new_mine_cell)
+                    else:
+                        raise ValueError("Pattern is not valid.")
 
-                        new_mine_cell = (row_number+1, i)
+                    print("new_mine_cell: {}".format(new_mine_cell))
+                    if i - 1 > 0 and i + (len(pattern) - 1) < self.width:
+                        self.add_mines_known_by_ai(new_mine_cell)
+
+                    if pattern == [1, 2, 1]:
+                        new_mine_cell = (row_number + 1, i)
+                    elif pattern == [1, 2, 2, 1]:
+                        new_mine_cell = (row_number + 1, i + 1)
+                        print("pattern [1, 2, 2, 1]")
                         print("new_mine_cell: {}".format(new_mine_cell))
-                        if i+1 < self.height and i < self.width:
-                            self.add_mines_known_by_ai(new_mine_cell)
+                    else:
+                        raise ValueError("Pattern is not valid.")
+                    print("new_mine_cell: {}".format(new_mine_cell))
+                    if i + 1 < self.height and i < self.width:
+                        self.add_mines_known_by_ai(new_mine_cell)
 
+                    if pattern == [1, 2, 1]:
                         new_mine_cell = (row_number + 1, i + (len(pattern) - 1))
+                    elif pattern == [1, 2, 2, 1]:
+                        new_mine_cell = (row_number + 1, i + (len(pattern) - 2))
+                        print("pattern [1, 2, 2, 1]")
                         print("new_mine_cell: {}".format(new_mine_cell))
-                        if i+1 < self.height and i+(len(pattern)-1) < self.width:
-                            self.add_mines_known_by_ai(new_mine_cell)
+                    else:
+                        raise ValueError("Pattern is not valid.")
+                    print("new_mine_cell: {}".format(new_mine_cell))
+                    if i + 1 < self.height and i + (len(pattern) - 1) < self.width:
+                        self.add_mines_known_by_ai(new_mine_cell)
 
         # Check vertically
         for col in range(len(matrix[0])):
             print("len(matrix):")
             print(len(matrix))
-            for i in range(len(matrix) - (len(pattern)-1)):
+            for i in range(len(matrix) - (len(pattern) - 1)):
+
                 column_slice = [matrix[j][col] for j in range(i, i + len(pattern))]
                 print("col: {}, i: {}, i + len(pattern): {}".format(col, i, i + len(pattern)))
                 print("column_slice: {}".format(column_slice))
@@ -959,27 +1093,59 @@ class MinesweeperAI:
                     print("col: {}, i: {}".format(col, i))
                     print("col: {}, i + len(pattern): {}".format(col, i + len(pattern)))
 
-                    print("Neighbors right.")
-                    new_mine_cell = (i, col + 1)
+                    print("Neighbors right")
+
+                    if pattern == [1, 2, 1]:
+                        new_mine_cell = (i, col + 1)
+                    elif pattern == [1, 2, 2, 1]:
+                        new_mine_cell = (i + 1, col + 1)
+                        print("pattern [1, 2, 2, 1]")
+                        print("new_mine_cell: {}".format(new_mine_cell))
+                    else:
+                        raise ValueError("Pattern is not valid.")
+
                     print("new_mine_cell: {}".format(new_mine_cell))
-                    if i < self.height and col+1 < self.width:
+                    if i < self.height and col + 1 < self.width:
                         self.add_mines_known_by_ai(new_mine_cell)
 
-                    new_mine_cell = (i + len(pattern) - 1, col+1)
+                    if pattern == [1, 2, 1]:
+                        new_mine_cell = (i + len(pattern) - 1, col + 1)
+                    elif pattern == [1, 2, 2, 1]:
+                        new_mine_cell = (i + len(pattern) - 2, col + 1)
+                        print("pattern [1, 2, 2, 1]")
+                        print("new_mine_cell: {}".format(new_mine_cell))
+                    else:
+                        raise ValueError("Pattern is not valid.")
                     print("new_mine_cell: {}".format(new_mine_cell))
-                    if i + len(pattern) - 1 < self.height and col+1 < self.width:
+                    if i + len(pattern) - 1 < self.height and col + 1 < self.width:
                         self.add_mines_known_by_ai(new_mine_cell)
 
                     print("Neighbors left:")
 
-                    new_mine_cell = (i, col - 1)
+                    if pattern == [1, 2, 1]:
+                        new_mine_cell = (i, col - 1)
+                    elif pattern == [1, 2, 2, 1]:
+                        new_mine_cell = (i + 1, col - 1)
+                        print("pattern [1, 2, 2, 1]")
+                        print("new_mine_cell: {}".format(new_mine_cell))
+                    else:
+                        raise ValueError("Pattern is not valid.")
+
                     print("new_mine_cell: {}".format(new_mine_cell))
-                    if i < self.height and col-1 > 0:
+                    if i < self.height and col - 1 > 0:
                         self.add_mines_known_by_ai(new_mine_cell)
 
-                    new_mine_cell = (i + len(pattern) - 1, col - 1)
+                    if pattern == [1, 2, 1]:
+                        new_mine_cell = (i + len(pattern) - 1, col - 1)
+                    elif pattern == [1, 2, 2, 1]:
+                        new_mine_cell = (i + len(pattern) - 2, col - 1)
+                        print("pattern [1, 2, 2, 1]")
+                        print("new_mine_cell: {}".format(new_mine_cell))
+                    else:
+                        raise ValueError("Pattern is not valid.")
+
                     print("new_mine_cell: {}".format(new_mine_cell))
-                    if i + len(pattern) - 1 < self.height and col-1 > 0:
+                    if i + len(pattern) - 1 < self.height and col - 1 > 0:
                         self.add_mines_known_by_ai(new_mine_cell)
 
     def find_pattern_indices(self, matrix, pattern):
@@ -1139,3 +1305,14 @@ def powerset(iterable):
     s = list(iterable)
     return itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s) + 1))
 
+
+def get_random_item_from_set(cells):
+    set_length = len(cells) - 1
+    try:
+        random_index_from_set = random.randrange(set_length)
+    except ValueError:
+        random_index_from_set = 0
+
+    random_element_from_set = list(cells)[random_index_from_set]
+    print(random_element_from_set)
+    return tuple(random_element_from_set)
