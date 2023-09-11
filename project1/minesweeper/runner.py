@@ -201,6 +201,7 @@ while True:
                     print(move)
             else:
                 print("AI making safe move.")
+                print(move)
             time.sleep(0.2)
 
         # Reset game state
