@@ -796,35 +796,60 @@ class MinesweeperAI:
                                     print("neighbor_cell_open: {}".format(neighbor_cell))
                                     self.mines_known_by_ai.add(neighbor_cell)
 
+                    for neighbor_cell in neighbor_cells_open:
+                        if sentence.cells == {neighbor_cell}:
+                            cell_count = sentence.count
+
+                            # BASIC MINES CALCULATION STRATEGY
+                            # If a number is touching the same number of cells,
+                            # then these cells are all mines.
+                            print("cell_count: {}".format(cell_count))
+                            print("neighbor cells: {}".format(neighbor_cells))
+                            free_neighbor_cells = set(neighbor_cells) - self.moves_made
+                            print("free_neighbor_cells: {}".format(free_neighbor_cells))
+                            if cell_count == len(free_neighbor_cells) and len(free_neighbor_cells) > 0:
+                                print("Adding to mines: {}".format(free_neighbor_cells))
+                                for free_neighbor_cell in free_neighbor_cells:
+                                    self.add_mine_known_by_ai(free_neighbor_cell)
+
                     # IF CELL HAS FLAGGED NEIGHBOR
                     # AND THE CELL COUNT IS EQUAL TO THE NUMBER OF FLAGGED NEIGHBORS
                     # ALL OTHER NEIGHBORS ARE SAFE
 
                     neighbors = self.get_neighbor_cells(sentence_cell, 'all')
-
                     known_or_flagged = self.mines_known.union(self.mines_known_by_ai)
-                    if known_or_flagged.intersection(neighbors):
+                    flagged_neighbors = known_or_flagged.intersection(neighbors)
+                    print("sentence_cell: {}".format(sentence_cell))
+                    print("neighbors: {}".format(neighbors))
+                    print("known_or_flagged: {}".format(known_or_flagged))
+                    print("flagged_neighbors: {}".format(flagged_neighbors))
+                    if flagged_neighbors:
                         sentence_about_cell = self.find_sentence_by_cell(sentence_cell)
 
-                        if sentence_about_cell.count == len(known_or_flagged):
-                            for neighbor in neighbors:
-                                print("Marking safe by the FLAGGED NEIGHBOR STRATEGY strategy")
-                                print("neighbor")
-                                print(neighbor)
-                                if neighbor not in self.moves_made or neighbor not in known_or_flagged:
-                                    self.mark_safe(neighbor)
+                        if sentence_about_cell.count > 0:
+
+                            if sentence_about_cell.count == len(flagged_neighbors):
+                                for neighbor in neighbors:
+                                    if neighbor not in self.moves_made and neighbor not in known_or_flagged:
+                                        print("Marking safe by the FLAGGED NEIGHBOR strategy")
+                                        print("neighbor")
+                                        print(neighbor)
+                                        self.mark_safe(neighbor)
+
+                    # SUM OF NEIGHBORS STRATEGY
+                    # IF SUM OF THE CELL'S NEIGHBORS IS EQUAL TO THE NUMBER OF OPEN CELLS IN NEIGHBOURHOOD,
+                    # OPEN NEIGHBOURS ARE MINES
+                    # TODO: Review. Not working properly.
 
                     """
-                    # SUM OF NEIGHBORS STRATEGY
-                    # IF SUM OF THE CELL'S NEIGHBORS IS EQUAL TO THE NUMBER OF OPEN CELLS IN NEIGHBOURHOOD, OPEN NEIGHBOURS ARE MINES
                     neighbor_cells_sum = self.get_neighbor_cells_sum(sentence_cell)
 
-                    print("cell: {}".format(cell))
+                    print("sentence_cell: {}".format(sentence_cell))
                     print("neighbor_cells_sum: {}".format(neighbor_cells_sum))
                     print("neighbor_cells: {}".format(neighbor_cells_open))
 
                     print("cell_count: {}".format(cell_count))
-                    if neighbor_cells_sum == sentence.count:
+                    if neighbor_cells_sum == len(neighbor_cells_open):
                         for neighbor_cell in neighbor_cells_open:
                             if not self.mine_is_not_false_negative({neighbor_cell}):
                                 print("{} cell is a false negative. Not a mines!".format(neighbor_cell))
@@ -834,12 +859,8 @@ class MinesweeperAI:
                                 if neighbor_cell not in self.moves_made:
                                     print("neighbor_cell_known: {}".format(neighbor_cell))
                                     self.mines_known_by_ai.add(neighbor_cell)
-                    else:
-                        for neighbor_cell_known in neighbor_cells:
-                            print("neighbor_cell_know to remove: {}".format(neighbor_cell_known))
-                            if neighbor_cell_known in self.mines_known_by_ai:
-                                self.mines_known_by_ai.remove(neighbor_cell_known)
-                    """
+                """
+
             # PROBABILITIES STRATEGIES
 
             if len(sentence.cells) == 1:
@@ -878,25 +899,6 @@ class MinesweeperAI:
                             self.suspected_mines_very_big_danger.add(neighbor_cell_suspected)
                             print(
                                 "self.suspected_mines_very_big_danger: {}".format(self.suspected_mines_very_big_danger))
-
-            """
-            for neighbor_cell in neighbor_cells_open:
-                if sentence.cells == {neighbor_cell}:
-                    cell_count = sentence.count
-
-                    # BASIC MINES CALCULATION STRATEGY
-                    # If a number is touching the same number of cells,
-                    # then these cells are all mines.
-                    print("cell_count: {}".format(cell_count))
-                    print("neighbor cells: {}".format(neighbor_cells))
-                    free_neighbor_cells = set(neighbor_cells) - self.moves_made
-                    print("free_neighbor_cells: {}".format(free_neighbor_cells))
-                    if cell_count == len(free_neighbor_cells) and len(free_neighbor_cells) > 0:
-                        print("Adding to mines: {}".format(free_neighbor_cells))
-                        for free_neighbor_cell in free_neighbor_cells:
-                            self.add_mine_known_by_ai(free_neighbor_cell)
-            """
-
 
             # THE CALCULATIONS FROM HARVARD ABOUT SAFES AND MINES:
             """
@@ -1150,7 +1152,8 @@ class MinesweeperAI:
                             # Add this to safes
                             # Remove this from ai_mines_known
                             new_mine_cell = (row_number - 1, i + (len(pattern) - 1))
-                            self.remove_mine_known_by_ai(new_mine_cell, row_number, pattern_to_print=pattern)
+                            # TODO: GET BACK OR NOT
+                            # self.remove_mine_known_by_ai(new_mine_cell, row_number, pattern_to_print=pattern)
                         else:
                             raise ValueError("Pattern is not valid.")
 
@@ -1171,7 +1174,8 @@ class MinesweeperAI:
                                 self.add_mine_known_by_ai(new_mine_cell, pattern)
                             elif all(a in pattern for a in [1, 1, 1]):
                                 new_mine_cell = (row_number + 1, i + (len(pattern) - 1))
-                                self.remove_mine_known_by_ai(new_mine_cell, row_number, pattern_to_print=pattern)
+                                # TODO: GET BACK OR NOT
+                                # self.remove_mine_known_by_ai(new_mine_cell, row_number, pattern_to_print=pattern)
                             else:
                                 raise ValueError("Pattern is not valid.")
 
@@ -1202,7 +1206,8 @@ class MinesweeperAI:
                                 self.add_mine_known_by_ai(new_mine_cell, pattern)
                             elif all(a in pattern for a in [1, 1, 1]):
                                 new_mine_cell = (i + len(pattern) - 1, col_num - 1)
-                                self.remove_mine_known_by_ai(new_mine_cell, col_num, True, pattern)
+                                # TODO: GET BACK OR NOT
+                                # self.remove_mine_known_by_ai(new_mine_cell, col_num, True, pattern)
                             else:
                                 raise ValueError("Pattern is not valid.")
 
@@ -1227,7 +1232,8 @@ class MinesweeperAI:
                                 self.add_mine_known_by_ai(new_mine_cell, pattern)
                             elif all(a in pattern for a in [1, 1, 1]):
                                 new_mine_cell = (i + len(pattern) - 1, col_num + 1)
-                                self.remove_mine_known_by_ai(new_mine_cell, col_num, True, pattern)
+                                # TODO: GET BACK OR NOT
+                                # self.remove_mine_known_by_ai(new_mine_cell, col_num, True, pattern)
                             else:
                                 raise ValueError("Pattern is not valid.")
 
