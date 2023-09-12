@@ -85,7 +85,8 @@ class Minesweeper:
         """
         Checks if all mines have been flagged.
         """
-        return self.mines_found == self.mines
+        if self.mines_found == self.mines:
+            return True
 
 
 # We know the exact value of these cells
@@ -209,7 +210,7 @@ class MinesweeperAI:
     Minesweeper game player
     """
 
-    def __init__(self, height=8, width=8, mines_flagged=None):
+    def __init__(self, height=8, width=8, mines=8, mines_flagged=None):
 
         # Set initial height and width
         if mines_flagged is None:
@@ -218,7 +219,7 @@ class MinesweeperAI:
             self.mines_flagged = mines_flagged
 
         self.board = [[None] * width for i in range(height)]
-
+        self.mines = mines
         self.height = height
         self.width = width
 
@@ -261,6 +262,12 @@ class MinesweeperAI:
 
         for sentence in self.knowledge:
             sentence.mark_mine(cell)
+
+    def won(self):
+        if len(self.moves_made) == self.width*self.height-self.mines:
+            return True
+        else:
+            return False
 
     def add_cells_to_knowledge(self, cells, count):
         new_sentence = Sentence(cells, count)

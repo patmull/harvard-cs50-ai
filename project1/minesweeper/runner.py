@@ -154,6 +154,8 @@ while True:
 
     # Display text
     text = "Lost" if lost else "Won" if game.mines == flags else ""
+    if ai.won():
+        text = "Won"
     text = mediumFont.render(text, True, WHITE)
     textRect = text.get_rect()
     textRect.center = ((5 / 6) * width, (2 / 3) * height)
@@ -224,19 +226,22 @@ while True:
 
     # Make move and update AI knowledge
     if move:
-        if game.is_mine(move):
-            lost = True
+        if ai.won():
+            lost = False
         else:
-            print("move.else")
-            nearby = game.nearby_mines(move)
-            revealed.add(move)
-            print("nearby")
-            print(nearby)
-            print("move")
-            print(move)
-            print("type(move):")
-            print(type(move))
-            ai.add_knowledge(move, nearby)
-            ai.update_board(move, nearby)
+            if game.is_mine(move):
+                lost = True
+            else:
+                print("move.else")
+                nearby = game.nearby_mines(move)
+                revealed.add(move)
+                print("nearby")
+                print(nearby)
+                print("move")
+                print(move)
+                print("type(move):")
+                print(type(move))
+                ai.add_knowledge(move, nearby)
+                ai.update_board(move, nearby)
 
     pygame.display.flip()
