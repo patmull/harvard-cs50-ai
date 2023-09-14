@@ -1,7 +1,7 @@
 import csv
 import sys
 
-from util import Node, StackFrontier, QueueFrontier
+from util import Node, QueueFrontier
 
 # Maps names to a set of corresponding person_ids
 names = {}
@@ -95,10 +95,9 @@ def shortest_path(source, target):
     start = source
     explored_states = set()
     num_explored = 0
-    solution = None
 
     start_node = Node(state=start, parent=None, action=None)
-    frontier = StackFrontier()
+    frontier = QueueFrontier()
     frontier.add(start_node)
 
     while True:
@@ -109,7 +108,6 @@ def shortest_path(source, target):
         node = frontier.remove()
         num_explored += 1
 
-        # TODO:
         if node.state == goal:
             actions = []
             connection = []
@@ -123,12 +121,9 @@ def shortest_path(source, target):
             solution = list(solution)
 
             solution_edited = []
-            right_now_added = 0
 
             actions = solution[0]
             connection = solution[1]
-
-            solution_tuples = []
 
             for i in range(len(actions)):
                 solution_edited.append((actions[i], connection[i]))
