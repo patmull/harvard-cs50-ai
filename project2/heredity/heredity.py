@@ -1,5 +1,6 @@
 import csv
 import itertools
+import random
 import sys
 import numpy as np
 
@@ -148,7 +149,6 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
     joint_probability_of_trait = 0
     gene_probability_distributions = {}
-    probability_distribution = {}
 
     for individual, characteristics in people.items():
         print(characteristics)
@@ -163,12 +163,36 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     for individual, gene_probability_distribution in gene_probability_distributions.items():
         gene_by_distribution = np.random.choice(list(gene_probability_distribution.keys()), 1,
                                                 p=list(gene_probability_distribution.values()), replace=False)
-        people_genes[individual] = gene_by_distribution[0]
+        people_genes[individual] = int(gene_by_distribution[0])
+
+        if random_mutation():
+            people_genes[individual] = random.choice(list(PROBS["gene"].keys()))
 
     print("people_genes:")
     print(people_genes)
 
+    people_traits = {}
+
+    for individual, gene in people_genes.items():
+        probability_distribution = PROBS["trait"][gene]
+        individual_has_trait = np.random.choice(list(probability_distribution.keys()), 1,
+                                                p=list(probability_distribution.values()), replace=False)
+        individual_has_trait = int(individual_has_trait[0])
+        people_traits[individual] = individual_has_trait
+
+    # Calculate join probability. Return the joint probability of all of
+    # those events taking place (how many copies of each of the genes, and who exhibits the trait).
+    # copies = numer 0, 1 or 2
+
     return -1
+
+
+def random_mutation():
+    prob_of_mutation = PROBS["mutation"]
+    gene_mutation = [True, False]
+    random_gene_mutation = np.random.choice(gene_mutation, 1, p=[prob_of_mutation, 1-prob_of_mutation])
+    random_gene_mutation = bool(random_gene_mutation[0])
+    return random_gene_mutation
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
