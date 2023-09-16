@@ -1,6 +1,7 @@
 import csv
 import itertools
 import sys
+import numpy as np
 
 PROBS = {
 
@@ -146,16 +147,26 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     print(have_trait)
 
     joint_probability_of_trait = 0
-    probability_distributions = []
+    gene_probability_distributions = {}
     probability_distribution = {}
 
     for individual, characteristics in people.items():
         print(characteristics)
         if characteristics['mother'] is None and characteristics['father'] is None:
             probability_distribution = PROBS['gene']
-            probability_distributions.append(probability_distribution)
+            gene_probability_distributions[individual] = probability_distribution
 
     # TODO: Somehow process the probability distribution and get joint probabilities
+
+    people_genes = {}
+    # genes for the individual considering the probability of having the gene
+    for individual, gene_probability_distribution in gene_probability_distributions.items():
+        gene_by_distribution = np.random.choice(list(gene_probability_distribution.keys()), 1,
+                                                p=list(gene_probability_distribution.values()), replace=False)
+        people_genes[individual] = gene_by_distribution[0]
+
+    print("people_genes:")
+    print(people_genes)
 
     return -1
 
