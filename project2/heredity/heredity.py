@@ -62,6 +62,15 @@ def main():
         for person in people
     }
 
+    # TEST joint_probability
+    test_one_gene = {"Harry"}
+    test_two_gene = {"James"}
+    test_has_trait = {"James"}
+
+    test_p = joint_probability(people, test_one_gene, test_two_gene, test_has_trait)
+    print("test_p")
+    print(test_p)
+
     # Loop over all sets of people who might have the trait
     names = set(people)
     for have_trait in powerset(names):
@@ -142,6 +151,8 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone not in set` have_trait` does not have the trait.
     """
 
+    # TODO: Harry probability
+
     print(people)
     print(one_gene)
     print(two_genes)
@@ -149,21 +160,39 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
     joint_probability_of_trait = 0
     gene_probability_distributions = {}
+    people_genes = {}
 
     for individual, characteristics in people.items():
         print(characteristics)
-        if characteristics['mother'] is None and characteristics['father'] is None:
-            probability_distribution = PROBS['gene']
-            gene_probability_distributions[individual] = probability_distribution
+
+        # TODO: When this should be adopted?
+        # if characteristics['mother'] is None and characteristics['father'] is None:
+
+        if individual in one_gene:
+            probability_distribution = PROBS["gene"][1]
+            people_genes[individual] = 1
+        elif individual in two_genes:
+            probability_distribution = PROBS["gene"][2]
+            people_genes[individual] = 2
+        else:
+            probability_distribution = PROBS['gene'][0]
+            people_genes[individual] = 0
+
+        gene_probability_distributions[individual] = probability_distribution
 
     # TODO: Somehow process the probability distribution and get joint probabilities
 
-    people_genes = {}
+    people_copy_probability = {}
+
     # genes for the individual considering the probability of having the gene
-    for individual, gene_probability_distribution in gene_probability_distributions.items():
-        gene_by_distribution = np.random.choice(list(gene_probability_distribution.keys()), 1,
-                                                p=list(gene_probability_distribution.values()), replace=False)
-        people_genes[individual] = int(gene_by_distribution[0])
+    for individual, gene_by_distribution in gene_probability_distributions.items():
+        """
+        gene_by_distribution = np.random.choice(list(gene_probability_distribution), 1,
+                                                p=list(gene_probability_distribution), replace=False)
+        gene_by_distribution = int(gene_by_distribution[0])
+        """
+
+        people_copy_probability[individual] = PROBS["gene"][people_genes[individual]]
 
         if random_mutation():
             people_genes[individual] = random.choice(list(PROBS["gene"].keys()))
@@ -172,19 +201,29 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     print(people_genes)
 
     people_traits = {}
+    trait_probability = {}
 
     for individual, gene in people_genes.items():
         probability_distribution = PROBS["trait"][gene]
         individual_has_trait = np.random.choice(list(probability_distribution.keys()), 1,
                                                 p=list(probability_distribution.values()), replace=False)
-        individual_has_trait = int(individual_has_trait[0])
-        people_traits[individual] = individual_has_trait
+        individual_has_trait = bool(individual_has_trait[0])
 
-    # Calculate join probability. Return the joint probability of all of
+        people_traits[individual] = individual_has_trait
+        trait_probability[individual] = people_copy_probability[individual] * PROBS["trait"][gene][individual_has_trait]
+        trait_probability[individual] = round(trait_probability[individual], 4)
+
+    print("people_traits:")
+    print(people_traits)
+
+    print("trait_probability")
+    print(trait_probability)
+
+    # Calculate joint probability. Return the joint probability of all of
     # those events taking place (how many copies of each of the genes, and who exhibits the trait).
     # copies = numer 0, 1 or 2
 
-    return -1
+    return trait_probability
 
 
 def random_mutation():
