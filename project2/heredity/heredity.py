@@ -312,8 +312,6 @@ def normalize(probabilities):
             for attribute_value_name in attribute_value_names:
                 probabilities[individual][attribute_name][attribute_value_name] = probabilities[individual][attribute_name][attribute_value_name] * factor
 
-    return probabilities
-
 
 if __name__ == "__main__":
     main()
