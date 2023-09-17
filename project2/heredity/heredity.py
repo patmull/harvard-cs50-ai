@@ -88,6 +88,8 @@ def main():
         for one_gene in powerset(names):
             for two_genes in powerset(names - one_gene):
 
+                # TODO: TRAIT OK FOR JAMES AND LILY, REST IS WRONG
+
                 # Update probabilities with new joint probability
                 p = joint_probability(people, one_gene, two_genes, have_trait)
                 update(probabilities, one_gene, two_genes, have_trait, p)
@@ -161,9 +163,6 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-
-    # TODO: Harry probability
-
     print(people)
     print(one_gene)
     print(two_genes)
@@ -216,8 +215,12 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
         people_copy_probability[individual] = PROBS["gene"][people_genes[individual]]
 
+        """
+        # TODO: Get this back
+        
         if random_mutation():
             people_genes[individual] = random.choice(list(PROBS["gene"].keys()))
+        """
 
     print("people_genes:")
     print(people_genes)
@@ -241,13 +244,22 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         # but on average should correspond to the right result of example on HW:
         # {'Harry': 0.4313, 'James': 0.0065, 'Lily': 0.9504}
 
-        # TODO: Add also option to include Trait like on HW: Lily and Harry False, James. True. Found out why???
+        # TODO: Add also option to include Trait like on HW: Lily and Harry False, James. True. ???
+        """
         probability_distribution = PROBS["trait"][gene]
         individual_has_trait = np.random.choice(list(probability_distribution.keys()), 1,
                                                 p=list(probability_distribution.values()), replace=False)
         individual_has_trait = bool(individual_has_trait[0])
+        """
+
+        if individual in have_trait:
+            individual_has_trait = True
+        else:
+            individual_has_trait = False
+
         trait_probability[individual] = (gene_probability_distributions[individual]
                                          * PROBS["trait"][gene][individual_has_trait])
+
         trait_probability[individual] = round(trait_probability[individual], 4)
 
         # TODO: Joint probability:
@@ -289,13 +301,16 @@ def update(probabilities, one_gene, two_genes, have_trait, p):
     for individual, characteristics in probabilities.items():
 
         if individual in two_genes:
-            probabilities[individual]["gene"][2] = probabilities[individual]["gene"][2] + p
-        if individual in one_gene:
-            probabilities[individual]["gene"][1] = probabilities[individual]["gene"][1] + p
-        if individual in have_trait:
-            probabilities[individual]["trait"][True] = probabilities[individual]["trait"][True] + p
+            probabilities[individual]["gene"][2] += p
+        elif individual in one_gene:
+            probabilities[individual]["gene"][1] += p
         else:
-            probabilities[individual]["trait"][False] = probabilities[individual]["trait"][False] + p
+            probabilities[individual]["gene"][0] += p
+
+        if individual in have_trait:
+            probabilities[individual]["trait"][True] += p
+        else:
+            probabilities[individual]["trait"][False] += p
 
 
 def normalize(probabilities):
