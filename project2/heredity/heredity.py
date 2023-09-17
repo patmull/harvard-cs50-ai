@@ -151,21 +151,20 @@ def probability_of_parent_gene(people_genes, parent, parents):
         if people_genes[parent] == 0:
             one_parent_zero_copies = True
 
-    # if one_parent_zero_copies:
+    if one_parent_zero_copies:
 
-    if people_genes[parent] == 0:
-        prob_of_parent_gene = PROBS["mutation"]
-        prob_of_not_getting_parent_gene = 1-PROBS["mutation"]
-    else:
-        prob_of_parent_gene = 1 - PROBS["mutation"]
-        prob_of_not_getting_parent_gene = PROBS["mutation"]
+        if people_genes[parent] == 0:
+            prob_of_parent_gene = PROBS["mutation"]
+            prob_of_not_getting_parent_gene = 1-PROBS["mutation"]
+        else:
+            prob_of_parent_gene = 1 - PROBS["mutation"]
+            prob_of_not_getting_parent_gene = PROBS["mutation"]
 
-    return prob_of_parent_gene, prob_of_not_getting_parent_gene
+        return prob_of_parent_gene, prob_of_not_getting_parent_gene
 
-    """
     else:
         raise NotImplementedError
-    """
+
 
 def joint_probability(people, one_gene, two_genes, have_trait):
     """
