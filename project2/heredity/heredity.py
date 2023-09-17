@@ -263,7 +263,12 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     # those events taking place (how many copies of each of the genes, and who exhibits the trait).
     # copies = numer 0, 1 or 2
 
-    return trait_probability
+    joint_probability_result = 1
+
+    for prob in trait_probability.values():
+        joint_probability_result *= prob
+
+    return joint_probability_result
 
 
 def random_mutation():
@@ -281,7 +286,16 @@ def update(probabilities, one_gene, two_genes, have_trait, p):
     Which value for each distribution is updated depends on whether
     the person is in `have_gene` and `have_trait`, respectively.
     """
-    raise NotImplementedError
+    for individual, characteristics in probabilities.items():
+
+        if individual in two_genes:
+            probabilities[individual]["gene"][2] = probabilities[individual]["gene"][2] + p
+        if individual in one_gene:
+            probabilities[individual]["gene"][1] = probabilities[individual]["gene"][1] + p
+        if individual in have_trait:
+            probabilities[individual]["trait"][True] = probabilities[individual]["trait"][True] + p
+        else:
+            probabilities[individual]["trait"][False] = probabilities[individual]["trait"][False] + p
 
 
 def normalize(probabilities):
@@ -289,7 +303,16 @@ def normalize(probabilities):
     Update `probabilities` such that each probability distribution
     is normalized (i.e., sums to 1, with relative proportions the same).
     """
-    raise NotImplementedError
+    print("probabilities:")
+    print(probabilities)
+
+    for individual, person_attributes in probabilities.items():
+        for attribute_name, attribute_value_names in person_attributes.items():
+            factor = 1.0 / sum(probabilities[individual][attribute_name].values())
+            for attribute_value_name in attribute_value_names:
+                probabilities[individual][attribute_name][attribute_value_name] = probabilities[individual][attribute_name][attribute_value_name] * factor
+
+    return probabilities
 
 
 if __name__ == "__main__":
