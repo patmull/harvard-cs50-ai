@@ -197,21 +197,21 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     gene_probability_distributions = {}
     people_with_no_parents_genes = {}
     people_with_parents_genes = {}
+    people_genes = {}
 
     for individual, characteristics in people.items():
-
-        # TODO: When Harry is included, it screws up the whole results, however test probability
-        # is OK with harry included
-        # Harry is discluded when is not added to the people_genes dictionary
-
-        """
         if individual in one_gene:
             people_genes[individual] = 1
         elif individual in two_genes:
             people_genes[individual] = 2
         else:
             people_genes[individual] = 0
-        """
+
+    for individual, characteristics in people.items():
+
+        # TODO: When Harry is included, it screws up the whole results, however test probability
+        # is OK with harry included
+        # Harry is discluded when is not added to the people_genes dictionary
 
         if characteristics['mother'] is None and characteristics['father'] is None:
             if individual in one_gene:
@@ -230,14 +230,13 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
             gene_probability_distributions[individual] = probability_of_current_copy
 
-    for individual, characteristics in people.items():
-        if characteristics['mother'] is not None and characteristics['father'] is not None:
+        else:
 
             parent_mother = characteristics['mother']
             parent_father = characteristics['father']
 
-            prob_of_mother_gene, prob_of_not_mother_gene = probability_of_parent_gene(people_with_no_parents_genes, parent_mother, {parent_mother, parent_father})
-            prob_of_father_gene, prob_of_not_father_gene = probability_of_parent_gene(people_with_no_parents_genes, parent_father, {parent_mother, parent_father})
+            prob_of_mother_gene, prob_of_not_mother_gene = probability_of_parent_gene(people_genes, parent_mother, {parent_mother, parent_father})
+            prob_of_father_gene, prob_of_not_father_gene = probability_of_parent_gene(people_genes, parent_father, {parent_mother, parent_father})
 
             probability_of_current_copy = (prob_of_not_mother_gene * prob_of_father_gene
                                            + prob_of_not_father_gene * prob_of_mother_gene)
@@ -277,29 +276,12 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     people_traits = {}
     trait_probability = {}
 
+    # TODO: Switch back to count not only parents after it is resolved
     for individual, gene in people_with_no_parents_genes.items():
-
-        """
-        probability_distribution = PROBS["trait"][gene]
-        individual_has_trait = np.random.choice(list(probability_distribution.keys()), 1,
-                                                p=list(probability_distribution.values()), replace=False)
-        individual_has_trait = bool(individual_has_trait[0])
-
-        people_traits[individual] = individual_has_trait
-        trait_probability[individual] = people_copy_probability[individual] * PROBS["trait"][gene][individual_has_trait]
-        """
-
+        # **HERE WAS MY OWN RANDOM MUTATION FEATURE**
         # NOTE: I added this to take into a fact the distribution. The results will differ based on the random choice,
         # but on average should correspond to the right result of example on HW:
         # {'Harry': 0.4313, 'James': 0.0065, 'Lily': 0.9504}
-
-        # TODO: Add also option to include Trait like on HW: Lily and Harry False, James. True. ???
-        """
-        probability_distribution = PROBS["trait"][gene]
-        individual_has_trait = np.random.choice(list(probability_distribution.keys()), 1,
-                                                p=list(probability_distribution.values()), replace=False)
-        individual_has_trait = bool(individual_has_trait[0])
-        """
 
         if individual in have_trait:
             individual_has_trait = True
