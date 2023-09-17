@@ -141,7 +141,18 @@ def powerset(s):
     ]
 
 
-def probability_of_parent_gene(people_genes, parent):
+def probability_of_parent_gene(people_genes, parent, parents):
+    # TODO: This does not hold universally. This holds only if one parent has zero copies!
+
+    probs_of_parent_genes = {}
+    one_parent_zero_copies = False
+
+    for parent in parents:
+        if people_genes[parent] == 0:
+            one_parent_zero_copies = True
+
+    # if one_parent_zero_copies:
+
     if people_genes[parent] == 0:
         prob_of_parent_gene = PROBS["mutation"]
         prob_of_not_getting_parent_gene = 1-PROBS["mutation"]
@@ -151,6 +162,10 @@ def probability_of_parent_gene(people_genes, parent):
 
     return prob_of_parent_gene, prob_of_not_getting_parent_gene
 
+    """
+    else:
+        raise NotImplementedError
+    """
 
 def joint_probability(people, one_gene, two_genes, have_trait):
     """
@@ -195,11 +210,11 @@ def joint_probability(people, one_gene, two_genes, have_trait):
             parent_mother = characteristics['mother']
             parent_father = characteristics['father']
 
-            prob_of_mother_gene, prob_of_not_mother_gene = probability_of_parent_gene(people_genes, parent_mother)
-            prob_of_father_gene, prob_of_not_father_gene = probability_of_parent_gene(people_genes, parent_father)
+            prob_of_mother_gene, prob_of_not_mother_gene = probability_of_parent_gene(people_genes, parent_mother, {parent_mother, parent_father})
+            prob_of_father_gene, prob_of_not_father_gene = probability_of_parent_gene(people_genes, parent_father, {parent_mother, parent_father})
 
-            probability_of_current_copy = (prob_of_not_mother_gene * prob_of_father_gene
-                                           + prob_of_not_father_gene * prob_of_mother_gene)
+            probability_of_current_copy = (prob_of_not_mother_gene * prob_of_not_father_gene
+                                           + prob_of_father_gene * prob_of_mother_gene)
 
             gene_probability_distributions[individual] = probability_of_current_copy
 
