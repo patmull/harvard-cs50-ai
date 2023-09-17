@@ -139,6 +139,17 @@ def powerset(s):
     ]
 
 
+def probability_of_parent_gene(people_genes, parent):
+    if people_genes[parent] == 0:
+        prob_of_parent_gene = PROBS["mutation"]
+        prob_of_not_getting_parent_gene = 1-PROBS["mutation"]
+    else:
+        prob_of_parent_gene = 1 - PROBS["mutation"]
+        prob_of_not_getting_parent_gene = PROBS["mutation"]
+
+    return prob_of_parent_gene, prob_of_not_getting_parent_gene
+
+
 def joint_probability(people, one_gene, two_genes, have_trait):
     """
     Compute and return a joint probability.
@@ -163,24 +174,35 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     people_genes = {}
 
     for individual, characteristics in people.items():
-        print(characteristics)
 
         # TODO: When this should be adopted?
         # if characteristics['mother'] is None and characteristics['father'] is None:
 
         if individual in one_gene:
-            probability_distribution = PROBS["gene"][1]
+            probability_of_current_copy = PROBS["gene"][1]
             people_genes[individual] = 1
         elif individual in two_genes:
-            probability_distribution = PROBS["gene"][2]
+            probability_of_current_copy = PROBS["gene"][2]
             people_genes[individual] = 2
         else:
-            probability_distribution = PROBS['gene'][0]
+            probability_of_current_copy = PROBS['gene'][0]
             people_genes[individual] = 0
 
-        gene_probability_distributions[individual] = probability_distribution
+        gene_probability_distributions[individual] = probability_of_current_copy
 
-    # TODO: Somehow process the probability distribution and get joint probabilities
+    for individual, characteristics in people.items():
+        if characteristics['mother'] is not None and characteristics['father'] is not None:
+
+            parent_mother = characteristics['mother']
+            parent_father = characteristics['father']
+
+            prob_of_mother_gene, prob_of_not_mother_gene = probability_of_parent_gene(people_genes, parent_mother)
+            prob_of_father_gene, prob_of_not_father_gene = probability_of_parent_gene(people_genes, parent_father)
+
+            probability_of_current_copy = (prob_of_not_mother_gene * prob_of_father_gene
+                                           + prob_of_not_father_gene * prob_of_mother_gene)
+
+            gene_probability_distributions[individual] = probability_of_current_copy
 
     people_copy_probability = {}
 
@@ -204,6 +226,8 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     trait_probability = {}
 
     for individual, gene in people_genes.items():
+
+        """
         probability_distribution = PROBS["trait"][gene]
         individual_has_trait = np.random.choice(list(probability_distribution.keys()), 1,
                                                 p=list(probability_distribution.values()), replace=False)
@@ -211,7 +235,23 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
         people_traits[individual] = individual_has_trait
         trait_probability[individual] = people_copy_probability[individual] * PROBS["trait"][gene][individual_has_trait]
+        """
+
+        # NOTE: I added this to take into a fact the distribution. The results will differ based on the random choice,
+        # but on average should correspond to the right result of example on HW:
+        # {'Harry': 0.4313, 'James': 0.0065, 'Lily': 0.9504}
+
+        # TODO: Add also option to include Trait like on HW: Lily and Harry False, James. True. Found out why???
+        probability_distribution = PROBS["trait"][gene]
+        individual_has_trait = np.random.choice(list(probability_distribution.keys()), 1,
+                                                p=list(probability_distribution.values()), replace=False)
+        individual_has_trait = bool(individual_has_trait[0])
+        trait_probability[individual] = (gene_probability_distributions[individual]
+                                         * PROBS["trait"][gene][individual_has_trait])
         trait_probability[individual] = round(trait_probability[individual], 4)
+
+        # TODO: Joint probability:
+        # 0.9504 * 0.0065 * 0.431288 = 0.0026643247488
 
     print("people_traits:")
     print(people_traits)
