@@ -71,6 +71,8 @@ def main():
     print("test_p")
     print(test_p)
 
+    assert 0.00267 > test_p > 0.00266
+
     # Loop over all sets of people who might have the trait
     names = set(people)
     for have_trait in powerset(names):
@@ -87,8 +89,6 @@ def main():
         # Loop over all sets of people who might have the gene
         for one_gene in powerset(names):
             for two_genes in powerset(names - one_gene):
-
-                # TODO: TRAIT OK FOR JAMES AND LILY, REST IS WRONG
 
                 # Update probabilities with new joint probability
                 p = joint_probability(people, one_gene, two_genes, have_trait)
@@ -141,40 +141,25 @@ def powerset(s):
     ]
 
 
-def probability_of_parent_gene(people_genes, parent, parents):
-    # TODO: This does not hold universally. This holds only if one parent has zero copies!
-    # There needs to be some different computation for people that have parents
-    # According to people gene
+def probability_of_parent_gene(people_genes, parent):
+    """
+    For anyone with parents in the data set, each parent will pass one of their two genes on to their child randomly,
+    and there is a PROBS["mutation"] chance that it mutates (goes from being the gene to not being the gene, or vice versa).
+    """
 
-    probs_of_parent_genes = {}
-    one_parent_zero_copies = False
-
-    """
-    for parent in parents:
-        if people_genes[parent] == 0:
-            one_parent_zero_copies = True
-    """
-    # if one_parent_zero_copies:
-
-    """
-    if parent is None:
-        prob_of_parent_gene = PROBS["mutation"]
-        prob_of_not_getting_parent_gene = 1 - PROBS["mutation"]
-    else:
-    """
     if people_genes[parent] == 0:
         prob_of_parent_gene = PROBS["mutation"]
         prob_of_not_getting_parent_gene = 1 - PROBS["mutation"]
-    else:
+    elif people_genes[parent] == 1:
+        prob_of_parent_gene = 0.5
+        prob_of_not_getting_parent_gene = 0.5
+    elif people_genes[parent] == 2:
         prob_of_parent_gene = 1 - PROBS["mutation"]
         prob_of_not_getting_parent_gene = PROBS["mutation"]
+    else:
+        raise ValueError("This number of people gene not allowed. Must be 0, 1 or 2.")
 
     return prob_of_parent_gene, prob_of_not_getting_parent_gene
-
-    """
-    else:
-        raise NotImplementedError
-    """
 
 
 def joint_probability(people, one_gene, two_genes, have_trait):
@@ -195,8 +180,6 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
     joint_probability_of_trait = 0
     gene_probability_distributions = {}
-    people_with_no_parents_genes = {}
-    people_with_parents_genes = {}
     people_genes = {}
 
     for individual, characteristics in people.items():
@@ -209,75 +192,48 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
     for individual, characteristics in people.items():
 
-        # TODO: When Harry is included, it screws up the whole results, however test probability
-        # is OK with harry included
-        # Harry is discluded when is not added to the people_genes dictionary
-
+        # TODO: When Harry is included, it screws up the whole results, however test probability is OK with harry
+        #  included
         if characteristics['mother'] is None and characteristics['father'] is None:
-            if individual in one_gene:
+            """
+            For anyone with no parents listed in the data set, use the probability distribution PROBS["gene"] 
+            to determine the probability that they have a particular number of the gene.
+            """
+            if people_genes[individual] == 0:
+                probability_of_current_copy = PROBS["gene"][0]
+            elif people_genes[individual] == 1:
                 probability_of_current_copy = PROBS["gene"][1]
-            elif individual in two_genes:
-                probability_of_current_copy = PROBS["gene"][2]
+            elif people_genes[individual] == 2:
+                probability_of_current_copy = PROBS['gene'][2]
             else:
-                probability_of_current_copy = PROBS['gene'][0]
-
-            if individual in one_gene:
-                people_with_no_parents_genes[individual] = 1
-            elif individual in two_genes:
-                people_with_no_parents_genes[individual] = 2
-            else:
-                people_with_no_parents_genes[individual] = 0
+                raise ValueError("This number of people gene not allowed. Must be 0, 1 or 2.")
 
             gene_probability_distributions[individual] = probability_of_current_copy
 
         else:
-
             parent_mother = characteristics['mother']
             parent_father = characteristics['father']
 
-            prob_of_mother_gene, prob_of_not_mother_gene = probability_of_parent_gene(people_genes, parent_mother, {parent_mother, parent_father})
-            prob_of_father_gene, prob_of_not_father_gene = probability_of_parent_gene(people_genes, parent_father, {parent_mother, parent_father})
+            prob_of_mother_gene, prob_of_not_mother_gene = probability_of_parent_gene(people_genes, parent_mother)
+            prob_of_father_gene, prob_of_not_father_gene = probability_of_parent_gene(people_genes, parent_father)
 
             probability_of_current_copy = (prob_of_not_mother_gene * prob_of_father_gene
                                            + prob_of_not_father_gene * prob_of_mother_gene)
 
+            # TODO: Why for the parents this works???
+            # TODO: Why Harry is always 0.333 even when set his gene_probability_distributions to 1 explicitly???
             gene_probability_distributions[individual] = probability_of_current_copy
 
-            if individual in one_gene:
-                people_with_parents_genes[individual] = 1
-            elif individual in two_genes:
-                people_with_parents_genes[individual] = 2
-            else:
-                people_with_parents_genes[individual] = 0
-
-    """
-    people_copy_probability = {}
-
-    # genes for the individual considering the probability of having the gene
-    for individual, gene_by_distribution in gene_probability_distributions.items():
-
-        gene_by_distribution = np.random.choice(list(gene_probability_distribution), 1,
-                                                p=list(gene_probability_distribution), replace=False)
-        gene_by_distribution = int(gene_by_distribution[0])
-
-
-        people_copy_probability[individual] = PROBS["gene"][people_genes[individual]]
-
-
-        # TODO: Get this back
-        
-        if random_mutation():
-            people_genes[individual] = random.choice(list(PROBS["gene"].keys()))
-    """
+    # ** HERE WAS RANDOM MANIPULATION WITH GENES** ADDED, PROBABLY NOT NEEDED
 
     print("people_genes:")
-    print(people_with_no_parents_genes)
+    print(people_genes)
 
     people_traits = {}
     trait_probability = {}
 
     # TODO: Switch back to count not only parents after it is resolved
-    for individual, gene in people_with_no_parents_genes.items():
+    for individual, gene in people_genes.items():
         # **HERE WAS MY OWN RANDOM MUTATION FEATURE**
         # NOTE: I added this to take into a fact the distribution. The results will differ based on the random choice,
         # but on average should correspond to the right result of example on HW:
@@ -288,13 +244,8 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         else:
             individual_has_trait = False
 
-        trait_probability[individual] = (gene_probability_distributions[individual]
-                                         * PROBS["trait"][gene][individual_has_trait])
-
+        trait_probability[individual] = PROBS["trait"][gene][individual_has_trait]
         trait_probability[individual] = round(trait_probability[individual], 4)
-
-        # TODO: Joint probability:
-        # 0.9504 * 0.0065 * 0.431288 = 0.0026643247488
 
     print("people_traits:")
     print(people_traits)
@@ -308,18 +259,14 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
     joint_probability_result = 1
 
-    for prob in trait_probability.values():
-        joint_probability_result *= prob
+    assert len(gene_probability_distributions) == len(trait_probability)
+    for individual, prob_value in gene_probability_distributions.items():
+        # TODO: Joint probability:
+        # For the example:
+        # 0.9504 * 0.0065 * 0.431288 = 0.0026643247488
+        joint_probability_result *= gene_probability_distributions[individual] * trait_probability[individual]
 
     return joint_probability_result
-
-
-def random_mutation():
-    prob_of_mutation = PROBS["mutation"]
-    gene_mutation = [True, False]
-    random_gene_mutation = np.random.choice(gene_mutation, 1, p=[prob_of_mutation, 1-prob_of_mutation])
-    random_gene_mutation = bool(random_gene_mutation[0])
-    return random_gene_mutation
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
@@ -356,7 +303,8 @@ def normalize(probabilities):
         for attribute_name, attribute_value_names in person_attributes.items():
             factor = 1.0 / sum(probabilities[individual][attribute_name].values())
             for attribute_value_name in attribute_value_names:
-                probabilities[individual][attribute_name][attribute_value_name] = probabilities[individual][attribute_name][attribute_value_name] * factor
+                probabilities[individual][attribute_name][attribute_value_name] \
+                    = probabilities[individual][attribute_name][attribute_value_name] * factor
 
 
 if __name__ == "__main__":
