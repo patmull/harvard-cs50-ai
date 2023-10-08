@@ -1,6 +1,7 @@
 import sys
 
 from crossword import *
+from data_helpers import create_all_pairs_from_list
 
 
 class CrosswordCreator():
@@ -110,14 +111,14 @@ class CrosswordCreator():
 
         for v, words in domains_cpy_items:
             for w in words:
-                if len(w) > v.length:
+                if len(w) != v.length:
                     elements_to_remove.append((v, w))  # = self.domains[v].remove(x)
 
         # Remove elements outside the loop
         for v, w in elements_to_remove:
             self.domains[v].remove(w)
 
-        print("AFTER ENFORCE NODE CONSISTENCY:")
+        print("AFTER ENFORCING NODE CONSISTENCY:")
         print_domains(self.domains)
 
     def revise(self, x, y):
@@ -129,7 +130,26 @@ class CrosswordCreator():
         Return True if a revision was made to the domain of `x`; return
         False if no revision was made.
         """
-        raise NotImplementedError
+        print("BEFORE REVISION:")
+        print(self.domains)
+
+        revision_made = False
+
+        def satisfies_constraint(x, y):
+            if self.domains[x] in self.crossword.overlaps and self.domains[y] in self.crossword.overlaps:
+                return False
+            else:
+                return False
+
+        for _x in self.domains[x]:
+            if not satisfies_constraint(x, y):
+                self.domains.pop(x)
+                revision_made = True
+
+        print("AFTER REVISION:")
+        print(self.domains)
+
+        return revision_made
 
     def ac3(self, arcs=None):
         """
@@ -140,6 +160,26 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
+
+        queue = set()
+
+        if arcs is None:
+            print("self.domains:")
+            print(self.domains)
+
+            list_of_variables = list(self.domains.keys())
+            queue = create_all_pairs_from_list(list_of_variables)
+
+        else:
+            for arc in arcs:
+                queue.add(arc)
+
+        while len(queue) > 0:
+            (x, y) = queue.pop()
+            if self.revise(x, y):
+                # TODO: Finish the AC-3 algorithm
+                # if len()
+
         raise NotImplementedError
 
     def assignment_complete(self, assignment):
