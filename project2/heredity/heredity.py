@@ -40,7 +40,6 @@ PROBS = {
 
 
 def main():
-
     # Check for proper usage
     if len(sys.argv) != 2:
         sys.exit("Usage: python heredity.py data.csv")
@@ -67,11 +66,30 @@ def main():
     test_two_gene = {"James"}
     test_has_trait = {"James"}
 
+    test_individual = 'Harry'
+    test_characteristics = {'mother': 'Lily', 'father': 'James', 'name': 'Harry'}
     test_p = joint_probability(people, test_one_gene, test_two_gene, test_has_trait)
     print("test_p")
     print(test_p)
 
-    assert 0.00267 > test_p > 0.00266
+    assert round(test_p, 4) == round(0.0026643247488, 4)
+
+    test_one_gene = {"Harry"}
+    test_two_gene = {"James"}
+
+    test_p = asses_inherited_probability(people, test_one_gene, test_two_gene, test_characteristics)
+    print("test_p")
+    print(test_p)
+
+    # assert round(test_p, 4) == round(0.9801, 4)
+
+    test_one_gene = {}
+    test_two_gene = {"James"}
+    test_p = asses_inherited_probability(people, test_one_gene, test_two_gene, test_characteristics)
+    print("test_p")
+    print(test_p)
+
+    # assert round(test_p, 4) == round(0.0099, 4)
 
     # Loop over all sets of people who might have the trait
     names = set(people)
@@ -89,7 +107,6 @@ def main():
         # Loop over all sets of people who might have the gene
         for one_gene in powerset(names):
             for two_genes in powerset(names - one_gene):
-
                 # Update probabilities with new joint probability
                 p = joint_probability(people, one_gene, two_genes, have_trait)
                 update(probabilities, one_gene, two_genes, have_trait, p)
@@ -141,7 +158,7 @@ def powerset(s):
     ]
 
 
-def probability_of_parent_gene(people_genes, parent):
+def inherited_probability(people_genes, parent):
     """
     For anyone with parents in the data set, each parent will pass one of their two genes on to their child randomly,
     and there is a PROBS["mutation"] chance that it mutates (goes from being the gene to not being the gene, or vice versa).
@@ -160,6 +177,59 @@ def probability_of_parent_gene(people_genes, parent):
         raise ValueError("This number of people gene not allowed. Must be 0, 1 or 2.")
 
     return prob_of_parent_gene, prob_of_not_getting_parent_gene
+
+
+# I tried probability_of_current_copy_from_parents = ((prob_of_father_gene * prob_of_mother_gene))
+# and no addition of random mutation for 0.5
+# This is working for family0.csv!!!
+
+def asses_inherited_probability(people, one_gene, two_genes, characteristics):
+    people_genes = {}
+    individual = characteristics['name']
+
+    for _individual, _characteristics in people.items():
+        if _individual in one_gene:
+            people_genes[_individual] = 1
+        elif _individual in two_genes:
+            people_genes[_individual] = 2
+        else:
+            people_genes[_individual] = 0
+
+    parent_mother = characteristics['mother']
+    parent_father = characteristics['father']
+
+    # probability_of_current_copy += probability_of_current_copy_from_parents
+    prob_of_mother_gene, prob_of_not_mother_gene = inherited_probability(people_genes, parent_mother)
+    prob_of_father_gene, prob_of_not_father_gene = inherited_probability(people_genes, parent_father)
+    if people_genes[individual] == 0:
+        """
+        There is only one way this can happen.
+        Person does not receive the gene from the parents
+        """
+        probability_of_current_copy_from_parents = prob_of_not_mother_gene * prob_of_not_father_gene
+
+    elif people_genes[individual] == 1:
+        """
+        There are two ways this can happen. 
+        Either he gets the gene from his mother AND not his father, 
+        OR he gets the gene from his father AND not his mother.
+        """
+        probability_of_current_copy_from_parents = (prob_of_mother_gene * prob_of_not_father_gene
+                                                    + prob_of_father_gene * prob_of_not_mother_gene)
+
+    elif people_genes[individual] == 2:
+        """
+        He gets the genes from his father AND his mother 
+        OR both from father AND not mother
+        OR both from mother
+        """
+        probability_of_current_copy_from_parents = prob_of_father_gene * prob_of_mother_gene
+        # + prob_of_father_gene**2
+        # + prob_of_mother_gene**2)
+    else:
+        raise ValueError("This number of people gene not allowed. Must be 0, 1 or 2.")
+
+    return probability_of_current_copy_from_parents
 
 
 def joint_probability(people, one_gene, two_genes, have_trait):
@@ -191,14 +261,12 @@ def joint_probability(people, one_gene, two_genes, have_trait):
             people_genes[individual] = 0
 
     for individual, characteristics in people.items():
+        """
+            # For anyone with no parents listed in the data set, use the probability distribution PROBS["gene"] 
+            # to determine the probability that they have a particular number of the gene.
+        """
 
-        # TODO: When Harry is included, it screws up the whole results, however test probability is OK with harry
-        #  included
-        if characteristics['mother'] is None and characteristics['father'] is None:
-            """
-            For anyone with no parents listed in the data set, use the probability distribution PROBS["gene"] 
-            to determine the probability that they have a particular number of the gene.
-            """
+        if characteristics['mother'] is None or characteristics['father'] is None:
             if people_genes[individual] == 0:
                 probability_of_current_copy = PROBS["gene"][0]
             elif people_genes[individual] == 1:
@@ -209,19 +277,14 @@ def joint_probability(people, one_gene, two_genes, have_trait):
                 raise ValueError("This number of people gene not allowed. Must be 0, 1 or 2.")
 
             gene_probability_distributions[individual] = probability_of_current_copy
-
         else:
-            parent_mother = characteristics['mother']
-            parent_father = characteristics['father']
 
-            prob_of_mother_gene, prob_of_not_mother_gene = probability_of_parent_gene(people_genes, parent_mother)
-            prob_of_father_gene, prob_of_not_father_gene = probability_of_parent_gene(people_genes, parent_father)
-
-            probability_of_current_copy = (prob_of_not_mother_gene * prob_of_father_gene
-                                           + prob_of_not_father_gene * prob_of_mother_gene)
-
-            # TODO: Why for the parents this works???
-            # TODO: Why Harry is always 0.333 even when set his gene_probability_distributions to 1 explicitly???
+            """
+            if people_genes[parent_mother] == 0 and people_genes[parent_father] == 0:
+                probability_of_current_copy_from_parents = PROBS["mutation"]
+            else:
+            """
+            probability_of_current_copy = asses_inherited_probability(people, one_gene, two_genes, characteristics)
             gene_probability_distributions[individual] = probability_of_current_copy
 
     # ** HERE WAS RANDOM MANIPULATION WITH GENES** ADDED, PROBABLY NOT NEEDED
@@ -261,10 +324,7 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
     assert len(gene_probability_distributions) == len(trait_probability)
     for individual, prob_value in gene_probability_distributions.items():
-        # TODO: Joint probability:
-        # For the example:
-        # 0.9504 * 0.0065 * 0.431288 = 0.0026643247488
-        joint_probability_result *= gene_probability_distributions[individual] * trait_probability[individual]
+        joint_probability_result *= (gene_probability_distributions[individual] * trait_probability[individual])
 
     return joint_probability_result
 
