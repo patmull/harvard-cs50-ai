@@ -116,6 +116,8 @@ class CrosswordCreator():
 
         elements_to_remove = []  # Create a list to store elements to be removed
 
+        # making sure that every value in a variable’s domain has the same number of letters as the variable’s length.
+
         for v, words in domains_cpy_items:
             for w in words:
                 if len(w) != v.length:
@@ -141,6 +143,15 @@ class CrosswordCreator():
         revision_made = False
 
         def satisfies_constraint(word, y):
+            """
+            x is arc consistent with y when every value in the domain of x has a possible value
+            in the domain of y that does not cause a conflict. (A conflict in the context of the crossword puzzle
+            is a square for which two variables disagree on what character value it should take on.)
+            :param word:
+            :param y:
+            :return:
+            """
+
             print(self.crossword.overlaps)
             # Finding corresponding possible values of x in the domain of y
             if word in self.domains[y]:
@@ -189,17 +200,26 @@ class CrosswordCreator():
             if self.revise(X, Y, domain_cpy):
                 # TODO: Finish the AC-3 algorithm
                 if X.length == 0:
+                    """
+                    If, in the process of enforcing arc consistency, you remove all of the remaining values from a domain, 
+                    return False (this means it’s impossible to solve the problem, 
+                    since there are no more possible values for the variable). 
+                    Otherwise, return True.
+                    """
                     return False
 
+                """
                 print("self.crossword.neighbors(X):")
                 print(self.crossword.neighbors(X))
                 print("Y:")
                 print({Y})
                 print(self.crossword.neighbors(X) - {Y})
+                """
                 for Z in (self.crossword.neighbors(X) - {Y}):
-                    print("queue:")
-                    print(queue)
-                    queue.pop((Z, X))
+                    # print("queue:")
+                    # print(queue)
+                    if (Z, X) in queue:
+                        queue.remove((Z, X))
 
         return True
 
@@ -208,14 +228,39 @@ class CrosswordCreator():
         Return True if `assignment` is complete (i.e., assigns a value to each
         crossword variable); return False otherwise.
         """
-        raise NotImplementedError
+        for variable, words in assignment:
+            if len(words) == 0:
+                return False
+        return True
 
     def consistent(self, assignment):
         """
         Return True if `assignment` is consistent (i.e., words fit in crossword
         puzzle without conflicting characters); return False otherwise.
         """
-        raise NotImplementedError
+        all_words = set()
+
+        if self.assignment_complete(assignment):
+            # TODO: An assignment is consistent if it satisfies all of the constraints of the problem:
+            #  that is to say, all values are distinct, every value is the correct length,
+            #  and there are no conflicts between neighboring variables.
+
+            for variable, words in assignment:
+                all_words = all_words.union(words)
+                for word in words:
+                    # Check whether all values distinct
+                    if word in all_words:
+                        return False
+
+                # Check whether every value is the correct length
+                if variable.length != len(words):
+                    return False
+
+            # TODO: Check whether there are conflicts between neighbouring variables
+
+            return True
+        else:
+            return False
 
     def order_domain_values(self, var, assignment):
         """
@@ -224,7 +269,21 @@ class CrosswordCreator():
         The first value in the list, for example, should be the one
         that rules out the fewest values among the neighbors of `var`.
         """
-        raise NotImplementedError
+
+        # the least-constraining values heuristic is computed
+        # as the number of values ruled out for neighboring unassigned variables.
+        # That is to say, if assigning var to a particular value results in eliminating n possible choices
+        # for neighboring variables, you should order your results in ascending order of n.
+
+        if self.consistent(assignment):
+            return assignment[var]
+        else:
+            self.enforce_node_consistency()
+            if self.consistent(assignment):
+                return assignment[var]
+            else:
+                raise Exception("Unexpected state of the program. "
+                                "Assignment is still not consistent even after enforcing consistency.")
 
     def select_unassigned_variable(self, assignment):
         """
@@ -234,6 +293,8 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
+
+
         raise NotImplementedError
 
     def backtrack(self, assignment):
