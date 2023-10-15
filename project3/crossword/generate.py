@@ -1,7 +1,7 @@
 import sys
 
 from crossword import *
-from data_helpers import create_all_pairs_from_list
+from data_helpers import create_all_pairs_from_list, get_dict_shared_items
 
 
 class CrosswordCreator():
@@ -88,12 +88,19 @@ class CrosswordCreator():
 
     def solve(self):
         """
-        Enforce node and arc consistency, and then solve the CSP.
+        Enforce node and arc consistency, and then solve the CSP (Constraint Satisfaction Problem).
         """
 
         self.enforce_node_consistency()
 
+        print("BEFORE AC3:")
+        print(self.domains)
+
         self.ac3()
+
+        print("AFTER AC3:")
+        print(self.domains)
+
         return self.backtrack(dict())
 
     def enforce_node_consistency(self):
@@ -121,7 +128,7 @@ class CrosswordCreator():
         print("AFTER ENFORCING NODE CONSISTENCY:")
         print_domains(self.domains)
 
-    def revise(self, x, y):
+    def revise(self, x, y, domain_cpy):
         """
         Make variable `x` arc consistent with variable `y`.
         To do so, remove values from `self.domains[x]` for which there is no
@@ -130,24 +137,26 @@ class CrosswordCreator():
         Return True if a revision was made to the domain of `x`; return
         False if no revision was made.
         """
-        print("BEFORE REVISION:")
-        print(self.domains)
 
         revision_made = False
 
-        def satisfies_constraint(x, y):
-            if self.domains[x] in self.crossword.overlaps and self.domains[y] in self.crossword.overlaps:
-                return False
+        def satisfies_constraint(word, y):
+            print(self.crossword.overlaps)
+            # Finding corresponding possible values of x in the domain of y
+            if word in self.domains[y]:
+                return True
             else:
                 return False
 
-        for _x in self.domains[x]:
-            if not satisfies_constraint(x, y):
-                self.domains.pop(x)
-                revision_made = True
-
-        print("AFTER REVISION:")
-        print(self.domains)
+        for word in domain_cpy:
+            """
+            To make x arc consistent with y, you’ll want to remove any value from the domain of x 
+            that does not have a corresponding possible value in the domain of y.
+            """
+            if not satisfies_constraint(word, y):
+                if len(self.domains[x]) > 0:
+                    self.domains[x].pop()
+                    revision_made = True
 
         return revision_made
 
@@ -164,8 +173,6 @@ class CrosswordCreator():
         queue = set()
 
         if arcs is None:
-            print("self.domains:")
-            print(self.domains)
 
             list_of_variables = list(self.domains.keys())
             queue = create_all_pairs_from_list(list_of_variables)
@@ -174,13 +181,27 @@ class CrosswordCreator():
             for arc in arcs:
                 queue.add(arc)
 
-        while len(queue) > 0:
-            (x, y) = queue.pop()
-            if self.revise(x, y):
-                # TODO: Finish the AC-3 algorithm
-                # if len()
+        domain_cpy = self.domains.copy()
 
-        raise NotImplementedError
+        while len(queue) > 0:
+            (X, Y) = queue.pop()
+
+            if self.revise(X, Y, domain_cpy):
+                # TODO: Finish the AC-3 algorithm
+                if X.length == 0:
+                    return False
+
+                print("self.crossword.neighbors(X):")
+                print(self.crossword.neighbors(X))
+                print("Y:")
+                print({Y})
+                print(self.crossword.neighbors(X) - {Y})
+                for Z in (self.crossword.neighbors(X) - {Y}):
+                    print("queue:")
+                    print(queue)
+                    queue.pop((Z, X))
+
+        return True
 
     def assignment_complete(self, assignment):
         """
