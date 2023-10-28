@@ -18,6 +18,7 @@ class CrosswordCreator():
         # <variable>: <number of words ruled out> (NOTE: This was added later by me, not an original class attribute)
         self.variables_constraints = {}
         self.list_of_variables = None
+        self.constraints = set()
 
     def letter_grid(self, assignment):
         """
@@ -179,6 +180,9 @@ class CrosswordCreator():
                 else:
                     self.variables_constraints[x] = 1
 
+        # constraints update: make the pairs from the constraint
+        self.constraints = create_all_pairs_from_list(self.variables_constraints)
+
         return revision_made
 
     def ac3(self, arcs=None):
@@ -248,40 +252,35 @@ class CrosswordCreator():
         Return True if `assignment` is consistent (i.e., words fit in crossword
         puzzle without conflicting characters); return False otherwise.
         """
-        all_words = set()
+        for (x, y) in self.constraints:
 
-        if self.assignment_complete(assignment):
+            # Only the assigned arcs
+            if x not in assignment or y not in assignment:
+                continue
 
-            for (x, y) in self.variables_constraints:
+            # Check whether all values distinct
+            if assignment[x] == assignment[y]:
+                return False
 
-                # Only the assigned arcs
-                if x not in assignment or y not in assignment:
-                    continue
+            # Check whether there are conflicts between neighbouring variables
+            domains_cpy = self.domains.copy()
 
-                # Check whether all values distinct
-                if assignment[x] == assignment[x]:
-                    return False
+            self.revise(x, y, domains_cpy)
+                #return False
 
-                # Check whether there are conflicts between neighbouring variables
-                domains_cpy = self.domains.copy()
-                if self.revise(x, y, domains_cpy):
-                    return False
+        # All conditions are met, it is OK
+        return True
 
-            # All conditions are met, it is OK
-            return True
-        else:
-            return False
 
     def order_domain_values(self, var, not_assigned):
         """
         var: Variable object, representing a variable in the puzzle.
 
-        return: list of all the values in the domain of var
+        return: list of all the values (the actual words in the crossword) in the domain of var.
         """
 
         def order_not_assigned():
 
-            # TODO: use the self.variables_constraints for the number of values ruled out
             # for the neighboring unassigned variables.
 
             # least-constraining values heuristic
@@ -290,12 +289,14 @@ class CrosswordCreator():
             print(n)
 
             if n > 0:
+                # TODO: This should contain the actual value
                 constrained_vars_ordered = dict(sorted(self.variables_constraints.items(), key=lambda item: item[1]))
                 return next(iter(constrained_vars_ordered.values()))
 
-        if self.consistent(not_assigned):
-            returned_order = order_not_assigned()
-            return returned_order
+        # if self.consistent(not_assigned):
+        returned_order = order_not_assigned()
+        return returned_order
+        """
         else:
             self.enforce_node_consistency()
             if self.consistent(not_assigned):
@@ -304,6 +305,7 @@ class CrosswordCreator():
             else:
                 raise Exception("Unexpected state of the program. "
                                 "Assignment is still not consistent even after enforcing consistency.")
+        """
 
     def select_unassigned_variable(self, assignment):
         """
@@ -313,7 +315,6 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
-        not_assigned = []
 
         for var in self.list_of_variables:
             """
@@ -323,33 +324,8 @@ class CrosswordCreator():
             """
             # Not already part of the assignment
             if var not in assignment:
-                not_assigned.append(var)
-
-        # if assigning var to a particular value results in eliminating n possible choices
-        #  for neighboring variables, you should order your results in ascending order of n
-        print("not_assigned:")
-        print(not_assigned)
-
-        # Choose the variable with the minimum number of remaining values
-        fewest_remaining_values_vars = []
-        for var_not_assigned in not_assigned:
-            # the variable with the fewest number of remaining values in its domain
-            ordered_domain_values = self.order_domain_values(var_not_assigned, not_assigned)
-            fewest_remaining_values_vars.append(ordered_domain_values)
-
-        most_degrees_vars_sorted = sorted(fewest_remaining_values_vars, key=lambda k: k[[*k][0]])
-
-        # TODO: If there is a tie between variables,
-        #  you should choose among whichever among those variables has the largest degree (has the most neighbors).
-        print("most_degrees_vars_sorted")
-        print(most_degrees_vars_sorted)
-
-        """
-        print("most_degrees_vars_sorted[0]:")
-        print(most_degrees_vars_sorted[0])
-        return most_degrees_vars_sorted[0]
-        """
-        return NotImplementedError
+                return var
+        return None
 
     def least_constraining_heuristic(self, var):
         """
@@ -390,17 +366,18 @@ class CrosswordCreator():
 
         var = self.select_unassigned_variable(assignment)
 
-        for value in self.order_domain_values(var, assignment):
+        # TODO: var should be the Variable but the value should be the word!
+        domain_values = self.domains[var].copy()
+        for value in domain_values:
             new_assignment = assignment.copy()
+            new_assignment[var] = value
             if self.consistent(new_assignment):
-                assignment[var] = value
-                result = self.backtrack(assignment)
+                result = self.backtrack(new_assignment)
 
                 if result is not None:
                     return result
 
-            del assignment[var]
-
+            # del assignment[var]
         return None
 
 
