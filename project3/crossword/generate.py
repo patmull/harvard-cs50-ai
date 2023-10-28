@@ -15,6 +15,9 @@ class CrosswordCreator():
             var: self.crossword.words.copy()
             for var in self.crossword.variables
         }
+        # <variable>: <number of words ruled out> (NOTE: This was added later by me, not an original class attribute)
+        self.variables_constraints = {}
+        self.list_of_variables = None
 
     def letter_grid(self, assignment):
         """
@@ -43,7 +46,6 @@ class CrosswordCreator():
                     print(letters[i][j] or " ", end="")
                 else:
                     print("█", end="")
-            print()
 
     def save(self, assignment, filename):
         """
@@ -139,10 +141,9 @@ class CrosswordCreator():
         Return True if a revision was made to the domain of `x`; return
         False if no revision was made.
         """
-
         revision_made = False
 
-        def satisfies_constraint(word, y):
+        def satisfies_constraint(x, y):
             """
             x is arc consistent with y when every value in the domain of x has a possible value
             in the domain of y that does not cause a conflict. (A conflict in the context of the crossword puzzle
@@ -152,22 +153,31 @@ class CrosswordCreator():
             :return:
             """
 
-            print(self.crossword.overlaps)
             # Finding corresponding possible values of x in the domain of y
-            if word in self.domains[y]:
+            if x in self.domains[y]:
+                # TODO: What correct role here an overlap plays? get the overlap, if any, between two variables.
+                """
+                if len(self.crossword.overlaps(x, y)) == 0:
+                    return False
+                """
                 return True
             else:
                 return False
 
-        for word in domain_cpy:
-            """
-            To make x arc consistent with y, you’ll want to remove any value from the domain of x 
-            that does not have a corresponding possible value in the domain of y.
-            """
-            if not satisfies_constraint(word, y):
-                if len(self.domains[x]) > 0:
-                    self.domains[x].pop()
-                    revision_made = True
+        """
+        To make x arc consistent with y, you’ll want to remove any value from the domain of x 
+        that does not have a corresponding possible value in the domain of y.
+        """
+        if not satisfies_constraint(x, y):
+            if len(self.domains[x]) > 0:
+                self.domains[x].pop()
+                revision_made = True
+                # Find the variable and note to the self.variables_constraints
+                # that this variable contains a word that it is constraining
+                if x in self.variables_constraints:
+                    self.variables_constraints[x] += 1
+                else:
+                    self.variables_constraints[x] = 1
 
         return revision_made
 
@@ -185,8 +195,8 @@ class CrosswordCreator():
 
         if arcs is None:
 
-            list_of_variables = list(self.domains.keys())
-            queue = create_all_pairs_from_list(list_of_variables)
+            self.list_of_variables = list(self.domains.keys())
+            queue = create_all_pairs_from_list(self.list_of_variables)
 
         else:
             for arc in arcs:
@@ -241,64 +251,113 @@ class CrosswordCreator():
         all_words = set()
 
         if self.assignment_complete(assignment):
-            # TODO: An assignment is consistent if it satisfies all of the constraints of the problem:
-            #  that is to say, all values are distinct, every value is the correct length,
-            #  and there are no conflicts between neighboring variables.
 
-            for variable, words in assignment:
-                all_words = all_words.union(words)
-                for word in words:
-                    # Check whether all values distinct
-                    if word in all_words:
-                        return False
+            for (x, y) in self.variables_constraints:
 
-                # Check whether every value is the correct length
-                if variable.length != len(words):
+                # Only the assigned arcs
+                if x not in assignment or y not in assignment:
+                    continue
+
+                # Check whether all values distinct
+                if assignment[x] == assignment[x]:
                     return False
 
-            # TODO: Check whether there are conflicts between neighbouring variables
+                # Check whether there are conflicts between neighbouring variables
+                domains_cpy = self.domains.copy()
+                if self.revise(x, y, domains_cpy):
+                    return False
 
+            # All conditions are met, it is OK
             return True
         else:
             return False
 
-    def order_domain_values(self, var, assignment):
+    def order_domain_values(self, var, not_assigned):
         """
-        Return a list of values in the domain of `var`, in order by
-        the number of values they rule out for neighboring variables.
-        The first value in the list, for example, should be the one
-        that rules out the fewest values among the neighbors of `var`.
+        var: Variable object, representing a variable in the puzzle.
+
+        return: list of all the values in the domain of var
         """
 
-        # the least-constraining values heuristic is computed
-        # as the number of values ruled out for neighboring unassigned variables.
-        # That is to say, if assigning var to a particular value results in eliminating n possible choices
-        # for neighboring variables, you should order your results in ascending order of n.
+        def order_not_assigned():
 
-        if self.consistent(assignment):
-            return assignment[var]
+            # TODO: use the self.variables_constraints for the number of values ruled out
+            # for the neighboring unassigned variables.
+
+            # least-constraining values heuristic
+            n = self.least_constraining_heuristic(var)  # this is used for ordering results in ascending order of n
+            print("n:")
+            print(n)
+
+            if n > 0:
+                constrained_vars_ordered = dict(sorted(self.variables_constraints.items(), key=lambda item: item[1]))
+                return next(iter(constrained_vars_ordered.values()))
+
+        if self.consistent(not_assigned):
+            return order_not_assigned()
         else:
             self.enforce_node_consistency()
-            if self.consistent(assignment):
-                return assignment[var]
+            if self.consistent(not_assigned):
+                return order_not_assigned()
             else:
                 raise Exception("Unexpected state of the program. "
                                 "Assignment is still not consistent even after enforcing consistency.")
 
     def select_unassigned_variable(self, assignment):
         """
-        Return an unassigned variable not already part of `assignment`.
-        Choose the variable with the minimum number of remaining values
+        return: an unassigned variable object not already part of `assignment`.
+
         in its domain. If there is a tie, choose the variable with the highest
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
+        not_assigned = []
 
+        for var in self.list_of_variables:
+            """
+            Note that any variable present in assignment already has a value, 
+            and therefore shouldn’t be counted when computing the number of values ruled out 
+            for neighboring unassigned variables.
+            """
+            # Not already part of the assignment
+            if var not in assignment:
+                not_assigned.append(var)
 
-        raise NotImplementedError
+        # if assigning var to a particular value results in eliminating n possible choices
+        #  for neighboring variables, you should order your results in ascending order of n
+        print("not_assigned:")
+        print(not_assigned)
+
+        # Choose the variable with the minimum number of remaining values
+        fewest_remaining_values_vars = []
+        for var_not_assigned in not_assigned:
+            # the variable with the fewest number of remaining values in its domain
+            fewest_remaining_values_vars.append(self.order_domain_values(var_not_assigned, not_assigned))
+
+        most_degrees_vars_sorted = sorted(fewest_remaining_values_vars, key=lambda k: k[[*k][0]])
+
+        # TODO: If there is a tie between variables,
+        #  you should choose among whichever among those variables has the largest degree (has the most neighbors).
+        print("most_degrees_vars_sorted[0]:")
+        print(most_degrees_vars_sorted[0])
+        return most_degrees_vars_sorted[0]
+
+    def least_constraining_heuristic(self, var):
+        """
+        computed as the number of values ruled out for neighboring unassigned variables.
+
+        :return:
+        """
+        return self.variables_constraints[var]
 
     def backtrack(self, assignment):
         """
+        :argument assignment partial assignment; {Variable: "word"}
+
+        :return complete satisfactory assignment of variables to values (if it is possible to do so)
+
+        SEE the HW video lecture for the pseudocode
+
         Using Backtracking Search, take as input a partial assignment for the
         crossword and return a complete assignment if possible to do so.
 
@@ -306,7 +365,33 @@ class CrosswordCreator():
 
         If no assignment is possible, return None.
         """
-        raise NotImplementedError
+
+        # TODO: An assignment is a dictionary where the keys are Variable objects and the values are strings
+        #  representing the words those variables will take on. The input assignment may not be complete
+        #  (not all variables will necessarily have values).
+        # TODO: If you would like, you may find that your algorithm is more efficient if you interleave search with inference (as by maintaining arc consistency every time you make a new assignment). You are not required to do this, but you are permitted to, so long as your function still produces correct results. (It is for this reason that the ac3 function allows an arcs argument, in case you’d like to start with a different queue of arcs.)
+
+        """
+        If it is possible to generate a satisfactory crossword puzzle, your function should return the complete assignment: 
+        a dictionary where each variable is a key and the value is the word that the variable should take on.
+        """
+        if self.assignment_complete(assignment):
+            return assignment
+
+        var = self.select_unassigned_variable(assignment)
+
+        for value in self.order_domain_values(var, assignment):
+            new_assignment = assignment.copy()
+            if self.consistent(new_assignment):
+                assignment[var] = value
+                result = self.backtrack(assignment)
+
+                if result is not None:
+                    return result
+
+            del assignment[var]
+
+        return None
 
 
 def print_domains(domains):
