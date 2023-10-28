@@ -238,9 +238,9 @@ class CrosswordCreator():
         Return True if `assignment` is complete (i.e., assigns a value to each
         crossword variable); return False otherwise.
         """
-        for variable, words in assignment:
-            if len(words) == 0:
-                return False
+        if self.select_unassigned_variable(assignment) is None:
+            return True
+
         return True
 
     def consistent(self, assignment):
@@ -294,11 +294,13 @@ class CrosswordCreator():
                 return next(iter(constrained_vars_ordered.values()))
 
         if self.consistent(not_assigned):
-            return order_not_assigned()
+            returned_order = order_not_assigned()
+            return returned_order
         else:
             self.enforce_node_consistency()
             if self.consistent(not_assigned):
-                return order_not_assigned()
+                returned_order = order_not_assigned()
+                return returned_order
             else:
                 raise Exception("Unexpected state of the program. "
                                 "Assignment is still not consistent even after enforcing consistency.")
@@ -332,15 +334,22 @@ class CrosswordCreator():
         fewest_remaining_values_vars = []
         for var_not_assigned in not_assigned:
             # the variable with the fewest number of remaining values in its domain
-            fewest_remaining_values_vars.append(self.order_domain_values(var_not_assigned, not_assigned))
+            ordered_domain_values = self.order_domain_values(var_not_assigned, not_assigned)
+            fewest_remaining_values_vars.append(ordered_domain_values)
 
         most_degrees_vars_sorted = sorted(fewest_remaining_values_vars, key=lambda k: k[[*k][0]])
 
         # TODO: If there is a tie between variables,
         #  you should choose among whichever among those variables has the largest degree (has the most neighbors).
+        print("most_degrees_vars_sorted")
+        print(most_degrees_vars_sorted)
+
+        """
         print("most_degrees_vars_sorted[0]:")
         print(most_degrees_vars_sorted[0])
         return most_degrees_vars_sorted[0]
+        """
+        return NotImplementedError
 
     def least_constraining_heuristic(self, var):
         """
@@ -375,7 +384,8 @@ class CrosswordCreator():
         If it is possible to generate a satisfactory crossword puzzle, your function should return the complete assignment: 
         a dictionary where each variable is a key and the value is the word that the variable should take on.
         """
-        if self.assignment_complete(assignment):
+        # Assignment complete
+        if len(assignment) == len(self.variables_constraints):
             return assignment
 
         var = self.select_unassigned_variable(assignment)
