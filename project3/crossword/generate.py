@@ -119,8 +119,8 @@ class CrosswordCreator():
 
         elements_to_remove = []  # Create a list to store elements to be removed
 
-        # making sure that every value in a variable’s domain has the same number of letters as the variable’s length.
-
+        # Unary constraint: making sure that every value in a variable’s domain
+        # has the same number of letters as the variable’s length.
         for v, words in domains_cpy_items:
             for w in words:
                 if len(w) != v.length:
@@ -135,55 +135,71 @@ class CrosswordCreator():
 
     def revise(self, x, y, domain_cpy):
         """
+        x and y will both be Variable objects representing variables in the puzzle.
+
+        :return The function should return True if a revision was made to the domain of x;
+        otherwise return False
+
         Make variable `x` arc consistent with variable `y`.
         To do so, remove values from `self.domains[x]` for which there is no
         possible corresponding value for `y` in `self.domains[y]`.
 
-        Return True if a revision was made to the domain of `x`; return
-        False if no revision was made.
         """
-        revision_made = False
-
-        def satisfies_constraint(x, y):
-            """
-            x is arc consistent with y when every value in the domain of x has a possible value
-            in the domain of y that does not cause a conflict. (A conflict in the context of the crossword puzzle
-            is a square for which two variables disagree on what character value it should take on.)
-            :param word:
-            :param y:
-            :return:
-            """
-
-            # Finding corresponding possible values of x in the domain of y
-            if x in self.domains[y]:
-                # TODO: What correct role here an overlap plays? get the overlap, if any, between two variables.
-                """
-                if len(self.crossword.overlaps(x, y)) == 0:
-                    return False
-                """
-                return True
-            else:
-                return False
 
         """
         To make x arc consistent with y, you’ll want to remove any value from the domain of x 
         that does not have a corresponding possible value in the domain of y.
         """
-        if not satisfies_constraint(x, y):
-            if len(self.domains[x]) > 0:
-                self.domains[x].pop()
-                revision_made = True
-                # Find the variable and note to the self.variables_constraints
-                # that this variable contains a word that it is constraining
-                if x in self.variables_constraints:
-                    self.variables_constraints[x] += 1
-                else:
-                    self.variables_constraints[x] = 1
+        # TODO: What correct role here an overlap plays? get the overlap, if any, between two variables.
+        print("self.crossword.overlaps")
+        print(self.crossword.overlaps)
 
-        # constraints update: make the pairs from the constraint
-        self.constraints = create_all_pairs_from_list(self.variables_constraints)
+        if self.crossword.overlaps[(x, y)] is None:
+            return False
+        else:
+            self.solve_conflicting_chars(x, y, self.crossword.overlaps[(x, y)])
 
-        return revision_made
+            # Find the variable and note to the self.variables_constraints
+            # that this variable contains a word that it is constraining
+            if x in self.variables_constraints:
+                self.variables_constraints[x] += 1
+            else:
+                self.variables_constraints[x] = 1
+            # constraints update: make the pairs from the constraint
+            self.constraints = create_all_pairs_from_list(self.variables_constraints)
+            return True
+
+    def solve_conflicting_chars(self, x, y, overlap):
+        """
+        remove any value from the domain of x that does not have
+        #  a corresponding possible value in the domain of y.
+
+        :param x:
+        :param y:
+        :param overlap:
+        :return:
+        """
+        print("x, y:")
+        print(x, y)
+
+        print(self.domains[x])
+        print(self.domains[y])
+        print(overlap)
+        
+        # TODO: Somehow identify the word that is causing the conflict
+        x_words_list = list(self.domains[x])
+        y_words_list = list(self.domains[y])
+
+        for i in range(len(x_words_list)):
+            for j in range(len(y_words_list)):
+                if not x_words_list[i][overlap[0]] == y_words_list[j][overlap[1]]:
+                    # not equal => needs to be removed
+                    # TODO: Should be somehow removed from x???
+                    print("print(self.domains) before and after update after finding non-equal words")
+                    print(self.domains)
+                    if x_words_list[i] in self.domains[x]:
+                        self.domains[x].remove(x_words_list[i])
+                    print(self.domains)
 
     def ac3(self, arcs=None):
         """
@@ -198,10 +214,8 @@ class CrosswordCreator():
         queue = set()
 
         if arcs is None:
-
             self.list_of_variables = list(self.domains.keys())
             queue = create_all_pairs_from_list(self.list_of_variables)
-
         else:
             for arc in arcs:
                 queue.add(arc)
