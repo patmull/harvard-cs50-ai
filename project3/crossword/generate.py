@@ -11,7 +11,6 @@ class CrosswordCreator():
         Create new CSP crossword generate.
         """
         self.crossword = crossword
-        # TODO: Check whether the self.domains is altered somehow, there are empty variables.
         self.domains = {
             var: self.crossword.words.copy()
             for var in self.crossword.variables
@@ -20,7 +19,6 @@ class CrosswordCreator():
         self.list_of_variables = {}
         self.constrained = {}
         self.constraints = set()
-        self.constraints = None
 
     def letter_grid(self, assignment):
         """
@@ -153,7 +151,6 @@ class CrosswordCreator():
         To make x arc consistent with y, you’ll want to remove any value from the domain of x 
         that does not have a corresponding possible value in the domain of y.
         """
-        # TODO: What correct role here an overlap plays? get the overlap, if any, between two variables.
         print("self.crossword.overlaps")
         print(self.crossword.overlaps)
 
@@ -170,7 +167,7 @@ class CrosswordCreator():
             else:
                 self.constrained[x] = 1
             # constraints update: make the pairs from the constraint
-            self.constraints = create_all_pairs_from_list(self.list_of_variables)
+            # self.constraints = create_all_pairs_from_list(self.list_of_variables)
 
             return True
 
@@ -191,7 +188,6 @@ class CrosswordCreator():
         print(self.domains[y])
         print(overlap)
         
-        # TODO: Somehow identify the word that is causing the conflict
         x_words_list = list(self.domains[x])
         y_words_list = list(self.domains[y])
 
@@ -199,7 +195,6 @@ class CrosswordCreator():
             for j in range(len(y_words_list)):
                 if not x_words_list[i][overlap[0]] == y_words_list[j][overlap[1]]:
                     # not equal => needs to be removed
-                    # TODO: Should be somehow removed from x???
                     print("x:")
                     print(self.domains[x])
 
@@ -312,7 +307,6 @@ class CrosswordCreator():
             print(n)
 
             if n > 0:
-                # TODO: This should contain the actual value
                 constrained_vars_ordered = dict(sorted(self.list_of_variables.items(), key=lambda item: item[1]))
                 return next(iter(constrained_vars_ordered.values()))
 
@@ -370,12 +364,6 @@ class CrosswordCreator():
 
         If no assignment is possible, return None.
         """
-
-        # TODO: An assignment is a dictionary where the keys are Variable objects and the values are strings
-        #  representing the words those variables will take on. The input assignment may not be complete
-        #  (not all variables will necessarily have values).
-        # TODO: If you would like, you may find that your algorithm is more efficient if you interleave search with inference (as by maintaining arc consistency every time you make a new assignment). You are not required to do this, but you are permitted to, so long as your function still produces correct results. (It is for this reason that the ac3 function allows an arcs argument, in case you’d like to start with a different queue of arcs.)
-
         """
         If it is possible to generate a satisfactory crossword puzzle, your function should return the complete assignment: 
         a dictionary where each variable is a key and the value is the word that the variable should take on.
@@ -389,7 +377,6 @@ class CrosswordCreator():
             # no more values to return
             return assignment
 
-        # TODO: var should be the Variable but the value should be the word!
         print("self.domains")
         print(self.domains)
         domain_values = self.domains[var].copy()
