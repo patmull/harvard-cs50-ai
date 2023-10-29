@@ -11,14 +11,16 @@ class CrosswordCreator():
         Create new CSP crossword generate.
         """
         self.crossword = crossword
+        # TODO: Check whether the self.domains is altered somehow, there are empty variables.
         self.domains = {
             var: self.crossword.words.copy()
             for var in self.crossword.variables
         }
         # <variable>: <number of words ruled out> (NOTE: This was added later by me, not an original class attribute)
-        self.variables_constraints = {}
-        self.list_of_variables = None
+        self.list_of_variables = {}
+        self.constrained = {}
         self.constraints = set()
+        self.constraints = None
 
     def letter_grid(self, assignment):
         """
@@ -103,6 +105,7 @@ class CrosswordCreator():
 
         print("AFTER AC3:")
         print(self.domains)
+        self.constraints = self.create_constraints()
 
         return self.backtrack(dict())
 
@@ -127,13 +130,13 @@ class CrosswordCreator():
                     elements_to_remove.append((v, w))  # = self.domains[v].remove(x)
 
         # Remove elements outside the loop
-        for v, w in elements_to_remove:
+        for (v, w) in elements_to_remove:
             self.domains[v].remove(w)
 
         print("AFTER ENFORCING NODE CONSISTENCY:")
         print_domains(self.domains)
 
-    def revise(self, x, y, domain_cpy):
+    def revise(self, x, y):
         """
         x and y will both be Variable objects representing variables in the puzzle.
 
@@ -159,14 +162,16 @@ class CrosswordCreator():
         else:
             self.solve_conflicting_chars(x, y, self.crossword.overlaps[(x, y)])
 
-            # Find the variable and note to the self.variables_constraints
+            # Find the variable and note to the self.list_of_variables
             # that this variable contains a word that it is constraining
-            if x in self.variables_constraints:
-                self.variables_constraints[x] += 1
+
+            if x in self.constrained:
+                self.constrained[x] += 1
             else:
-                self.variables_constraints[x] = 1
+                self.constrained[x] = 1
             # constraints update: make the pairs from the constraint
-            self.constraints = create_all_pairs_from_list(self.variables_constraints)
+            self.constraints = create_all_pairs_from_list(self.list_of_variables)
+
             return True
 
     def solve_conflicting_chars(self, x, y, overlap):
@@ -195,11 +200,13 @@ class CrosswordCreator():
                 if not x_words_list[i][overlap[0]] == y_words_list[j][overlap[1]]:
                     # not equal => needs to be removed
                     # TODO: Should be somehow removed from x???
-                    print("print(self.domains) before and after update after finding non-equal words")
-                    print(self.domains)
+                    print("x:")
+                    print(self.domains[x])
+
                     if x_words_list[i] in self.domains[x]:
                         self.domains[x].remove(x_words_list[i])
-                    print(self.domains)
+
+                    print(self.domains[x])
 
     def ac3(self, arcs=None):
         """
@@ -225,8 +232,7 @@ class CrosswordCreator():
         while len(queue) > 0:
             (X, Y) = queue.pop()
 
-            if self.revise(X, Y, domain_cpy):
-                # TODO: Finish the AC-3 algorithm
+            if self.revise(X, Y):
                 if X.length == 0:
                     """
                     If, in the process of enforcing arc consistency, you remove all of the remaining values from a domain, 
@@ -235,14 +241,6 @@ class CrosswordCreator():
                     Otherwise, return True.
                     """
                     return False
-
-                """
-                print("self.crossword.neighbors(X):")
-                print(self.crossword.neighbors(X))
-                print("Y:")
-                print({Y})
-                print(self.crossword.neighbors(X) - {Y})
-                """
                 for Z in (self.crossword.neighbors(X) - {Y}):
                     # print("queue:")
                     # print(queue)
@@ -256,16 +254,19 @@ class CrosswordCreator():
         Return True if `assignment` is complete (i.e., assigns a value to each
         crossword variable); return False otherwise.
         """
-        if self.select_unassigned_variable(assignment) is None:
-            return True
 
-        return True
+        if len(assignment) == len(self.list_of_variables):
+            return True
+        else:
+            return False
 
     def consistent(self, assignment):
         """
         Return True if `assignment` is consistent (i.e., words fit in crossword
         puzzle without conflicting characters); return False otherwise.
         """
+
+        # The binary constraints on a variable are given by its overlap with neighboring variables
         for (x, y) in self.constraints:
 
             # Only the assigned arcs
@@ -276,17 +277,25 @@ class CrosswordCreator():
             if assignment[x] == assignment[y]:
                 return False
 
-            # Check whether there are conflicts between neighbouring variables
-            domains_cpy = self.domains.copy()
-
-            self.revise(x, y, domains_cpy)
-                #return False
-
-        # All conditions are met, it is OK
+        # All conditions are met, consistency is OK
         return True
 
+    def create_constraints(self):
+        neighbors_pairs = []
 
-    def order_domain_values(self, var, not_assigned):
+        for var in self.list_of_variables:
+            var_neighbors = self.crossword.neighbors(var)
+            for var_neighbor in var_neighbors:
+                neighbors_overlap = self.crossword.overlaps[(var, var_neighbor)]
+                # pairs = create_all_pairs_from_list(list(neighbors_overlap))
+                neighbors_pairs.append(neighbors_overlap)
+
+                print("neighbors_pairs:")
+                print(neighbors_pairs)
+
+        return neighbors_pairs
+
+    def order_domain_values(self, var):
         """
         var: Variable object, representing a variable in the puzzle.
 
@@ -304,22 +313,12 @@ class CrosswordCreator():
 
             if n > 0:
                 # TODO: This should contain the actual value
-                constrained_vars_ordered = dict(sorted(self.variables_constraints.items(), key=lambda item: item[1]))
+                constrained_vars_ordered = dict(sorted(self.list_of_variables.items(), key=lambda item: item[1]))
                 return next(iter(constrained_vars_ordered.values()))
 
         # if self.consistent(not_assigned):
         returned_order = order_not_assigned()
         return returned_order
-        """
-        else:
-            self.enforce_node_consistency()
-            if self.consistent(not_assigned):
-                returned_order = order_not_assigned()
-                return returned_order
-            else:
-                raise Exception("Unexpected state of the program. "
-                                "Assignment is still not consistent even after enforcing consistency.")
-        """
 
     def select_unassigned_variable(self, assignment):
         """
@@ -336,8 +335,15 @@ class CrosswordCreator():
             and therefore shouldn’t be counted when computing the number of values ruled out 
             for neighboring unassigned variables.
             """
-            # Not already part of the assignment
-            if var not in assignment:
+            # Not already part of the assignment and not none value
+            # if var not in assignment and self.domains[var] is not None and len(self.domains[var]) > 0:
+            print("self.domains[var]:", self.domains[var])
+            print("assignment:", assignment)
+            if var not in assignment and len(self.domains[var]) > 0:
+
+                if var is None:
+                    raise ValueError("var is None.")
+
                 return var
         return None
 
@@ -347,7 +353,7 @@ class CrosswordCreator():
 
         :return:
         """
-        return self.variables_constraints[var]
+        return self.constrained[var]
 
     def backtrack(self, assignment):
         """
@@ -375,23 +381,32 @@ class CrosswordCreator():
         a dictionary where each variable is a key and the value is the word that the variable should take on.
         """
         # Assignment complete
-        if len(assignment) == len(self.variables_constraints):
+        if self.assignment_complete(assignment):
             return assignment
 
         var = self.select_unassigned_variable(assignment)
+        if var is None:
+            # no more values to return
+            return assignment
 
         # TODO: var should be the Variable but the value should be the word!
+        print("self.domains")
+        print(self.domains)
         domain_values = self.domains[var].copy()
+        print("domain_values:")
+        print(domain_values)
+
         for value in domain_values:
-            new_assignment = assignment.copy()
-            new_assignment[var] = value
-            if self.consistent(new_assignment):
-                result = self.backtrack(new_assignment)
 
-                if result is not None:
-                    return result
+            if value not in assignment.values():
+                new_assignment = assignment.copy()
+                new_assignment[var] = value
+                if self.consistent(new_assignment):
+                    result = self.backtrack(new_assignment)
 
-            # del assignment[var]
+                    if result is not None:
+                        return result
+
         return None
 
 
@@ -415,6 +430,8 @@ def main():
     crossword = Crossword(structure, words)
     creator = CrosswordCreator(crossword)
     assignment = creator.solve()
+
+    print(f"assignment:", assignment)
 
     # Print result
     if assignment is None:
