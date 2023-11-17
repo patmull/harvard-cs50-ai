@@ -125,7 +125,7 @@ class CrosswordCreator():
         for v, words in domains_cpy_items:
             for w in words:
                 if len(w) != v.length:
-                    elements_to_remove.append((v, w))  # = self.domains[v].remove(x)
+                    elements_to_remove.append((v, w))
 
         # Remove elements outside the loop
         for (v, w) in elements_to_remove:
@@ -151,25 +151,16 @@ class CrosswordCreator():
         To make x arc consistent with y, you’ll want to remove any value from the domain of x 
         that does not have a corresponding possible value in the domain of y.
         """
-        print("self.crossword.overlaps")
-        print(self.crossword.overlaps)
+        overlap = self.crossword.overlaps[(x, y)]
+        print("overlap")
+        print(overlap)
 
-        if self.crossword.overlaps[(x, y)] is None:
+        if overlap is None:
             return False
         else:
-            self.solve_conflicting_chars(x, y, self.crossword.overlaps[(x, y)])
+            self.solve_conflicting_chars(x, y, overlap)
 
-            # Find the variable and note to the self.list_of_variables
-            # that this variable contains a word that it is constraining
-
-            if x in self.constrained:
-                self.constrained[x] += 1
-            else:
-                self.constrained[x] = 1
-            # constraints update: make the pairs from the constraint
-            # self.constraints = create_all_pairs_from_list(self.list_of_variables)
-
-            return True
+            return False
 
     def solve_conflicting_chars(self, x, y, overlap):
         """
@@ -184,23 +175,23 @@ class CrosswordCreator():
         print("x, y:")
         print(x, y)
 
-        print(self.domains[x])
-        print(self.domains[y])
-        print(overlap)
-        
         x_words_list = list(self.domains[x])
         y_words_list = list(self.domains[y])
 
         for i in range(len(x_words_list)):
             for j in range(len(y_words_list)):
-                if not x_words_list[i][overlap[0]] == y_words_list[j][overlap[1]]:
+                if x_words_list[i][overlap[0]] != y_words_list[j][overlap[1]]:
                     # not equal => needs to be removed
                     print("x:")
                     print(self.domains[x])
 
                     if x_words_list[i] in self.domains[x]:
+                        print("self.domains.", self.domains)
+                        print("self.domains[x]:", self.domains[x])
+                        print("x_words_list[i]:", x_words_list[i])
                         self.domains[x].remove(x_words_list[i])
-
+                        print("self.domains:", self.domains)
+                        # TODO: Too many variables gets eliminated. Some became empty sets, find out why
                     print(self.domains[x])
 
     def ac3(self, arcs=None):
@@ -212,7 +203,6 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
-
         queue = set()
 
         if arcs is None:
@@ -222,23 +212,19 @@ class CrosswordCreator():
             for arc in arcs:
                 queue.add(arc)
 
-        domain_cpy = self.domains.copy()
-
         while len(queue) > 0:
+
             (X, Y) = queue.pop()
 
             if self.revise(X, Y):
-                if X.length == 0:
-                    """
-                    If, in the process of enforcing arc consistency, you remove all of the remaining values from a domain, 
-                    return False (this means it’s impossible to solve the problem, 
-                    since there are no more possible values for the variable). 
-                    Otherwise, return True.
-                    """
+
+                if len(self.domains) == 0:
                     return False
+
                 for Z in (self.crossword.neighbors(X) - {Y}):
                     # print("queue:")
                     # print(queue)
+
                     if (Z, X) in queue:
                         queue.remove((Z, X))
 
@@ -331,14 +317,14 @@ class CrosswordCreator():
             """
             # Not already part of the assignment and not none value
             # if var not in assignment and self.domains[var] is not None and len(self.domains[var]) > 0:
-            print("self.domains[var]:", self.domains[var])
-            print("assignment:", assignment)
-            if var not in assignment and len(self.domains[var]) > 0:
 
-                if var is None:
-                    raise ValueError("var is None.")
+            if var in self.domains:
+                if var not in assignment and len(self.domains[var]) > 0:
 
-                return var
+                    if var is None:
+                        raise ValueError("var is None.")
+
+                    return var
         return None
 
     def least_constraining_heuristic(self, var):
@@ -351,6 +337,7 @@ class CrosswordCreator():
 
     def backtrack(self, assignment):
         """
+        :param assignment:
         :argument assignment partial assignment; {Variable: "word"}
 
         :return complete satisfactory assignment of variables to values (if it is possible to do so)
