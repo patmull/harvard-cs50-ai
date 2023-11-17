@@ -180,7 +180,7 @@ class CrosswordCreator():
 
         for i in range(len(x_words_list)):
             for j in range(len(y_words_list)):
-                if x_words_list[i][overlap[0]] != y_words_list[j][overlap[1]]:
+                if x_words_list[i] == y_words_list[j] and x_words_list[i][overlap[0]] != y_words_list[j][overlap[1]]:
                     # not equal => needs to be removed
                     print("x:")
                     print(self.domains[x])
@@ -248,14 +248,28 @@ class CrosswordCreator():
         """
 
         # The binary constraints on a variable are given by its overlap with neighboring variables
-        for (x, y) in self.constraints:
+        for var_x, word_x in assignment.items():
+            # proper length
+            if var_x.length != len(word_x):  # check if assigned word is of the proper length for the variable
+                return False
+
+            for var_y, word_y in assignment.items():
+                if var_x != var_y:
+                    if word_x == word_y:
+                        return False
+
+                    overlap = self.crossword.overlaps[var_x, var_y]  # it returns indices where they overlap
+                    if overlap:  # if there is an overlap, make sure that the certain character is the same
+                        x_overlap, y_overlap = overlap
+                        if word_x[x_overlap] != word_y[y_overlap]:  # if the characters are different, then it is inconsistent
+                            return False
 
             # Only the assigned arcs
-            if x not in assignment or y not in assignment:
+            if var_x not in assignment or word_x not in assignment:
                 continue
 
             # Check whether all values distinct
-            if assignment[x] == assignment[y]:
+            if assignment[var_x] == assignment[word_x]:
                 return False
 
         # All conditions are met, consistency is OK
