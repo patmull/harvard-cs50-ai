@@ -154,7 +154,7 @@ class NimAI():
         if state not in list(q_keys):
             return 0
 
-        return
+        return self.choose_action(state)
 
     def choose_action(self, state, epsilon=True):
 
