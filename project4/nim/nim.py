@@ -51,6 +51,7 @@ class Nim():
         Make the move `action` for the current player.
         `action` must be a tuple `(i, j)`.
         """
+        # print("action: ", action)
         pile, count = action
 
         # Check for errors
@@ -59,6 +60,11 @@ class Nim():
         elif pile < 0 or pile >= len(self.piles):
             raise Exception("Invalid pile")
         elif count < 1 or count > self.piles[pile]:
+            """
+            print("count: ", count)
+            print("pile: ", pile)
+            print("self.piles: ", self.piles)
+            """
             raise Exception("Invalid number of objects")
 
         # Update pile
@@ -101,12 +107,12 @@ class NimAI():
         Return the Q-value for the state `state` and the action `action`.
         If no Q-value exists yet in `self.q`, return 0.
         """
-        print("state: ", state)
+        # print("state: ", state)
         assert type(state) is list
         assert type(action) is tuple and len(action) == 2
 
-        if action in self.q:
-            return self.q[(state, action)]
+        if (tuple(state), action) in self.q:
+            return self.q[(tuple(state), action)]
 
         # If no Q-value for the state/action pair exists in self.q, then the function should return 0.
         return 0
@@ -128,10 +134,11 @@ class NimAI():
         """
         # Q(s, a) <- old value estimate + alpha * (new value estimate - old value estimate
         # TODO: look for the alternative formula, whether it shouldn't be used here or for implementation in a lecture
-
+        # print("q: ", self.q)
         # The new value estimate should be the sum of the current reward and the estimated future reward.
         new_value = reward + future_rewards
-        self.q[state, action] = old_q + self.alpha * (new_value - old_q)
+
+        self.q[tuple(state), action] = old_q + self.alpha * (new_value - old_q)
 
     def best_future_reward(self, state):
         """
@@ -143,40 +150,41 @@ class NimAI():
         Q-value in `self.q`. If there are no available actions in
         `state`, return 0.
         """
-        if state not in list(self.q.keys()):
+        q_keys = self.q.keys()
+        if state not in list(q_keys):
             return 0
 
-        return max(self.q[(state, action)] for action in Nim.available_actions(state))
+        return
 
     def choose_action(self, state, epsilon=True):
 
         if epsilon is False:
             # returning highest q key -- the action ([1]) based on the q dict. values
             qs_for_state = {key: value for key, value in self.q.items() if state in key}
-            return choose_best_move(qs_for_state)
+            return self.choose_best_move(state)
         else:
             # Epsilon algorithm
             # Best move:
             prob_random = self.epsilon  # e.g., 35; 70
+            prob_random = prob_random * 100
 
-            roulette_value = random.randrange(0, 100, 1)
+            roulette_value = random.randrange(1, 100, 1)
 
-            if 100 > roulette_value > prob_random + 1:  # e.g., 36 to 100; 31 to 100; NOTE: the 100 just for check
+            # print("roulette_value: ", roulette_value)
+            # print("prob: ", prob_random)
+            if roulette_value > prob_random:  # e.g., 36 to 100; 31 to 100; NOTE: the 100 just for check
                 # the best choice
-                return choose_best_move(self.q, state)  # choose from all the actions
-            elif 0 < roulette_value < prob_random:  # e.g., 0 to 35; 0 to 70
+                return self.choose_best_move(state)  # choose from all the actions
+            else:  # e.g., 0 to 35; 0 to 70
                 # the random choice
-                return random.choice(list(self.q.keys()))
-            else:
-                raise ValueError("Unexpected relaton of the roulette_value and prob_best")
+                return random.choice(list(Nim.available_actions(state)))
 
-
-# TODO: If multiple actions have the same Q-value, any of those options is an acceptable return value.
-def choose_best_move(qs_for_state, state):
-    if len(qs_for_state) > 0:
-        return max(qs_for_state, key=qs_for_state.get)[0]
-    else:
-        return random.choice(list(Nim.available_actions(state)))
+    # TODO: If multiple actions have the same Q-value, any of those options is an acceptable return value.
+    def choose_best_move(self, state):
+        if tuple(state) in self.q:
+            return max(self.q[(tuple(state), action)] for action in Nim.available_actions(state))
+        else:
+            return random.choice(list(Nim.available_actions(state)))
 
 
 def train(n):
