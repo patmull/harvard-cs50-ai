@@ -3,6 +3,7 @@ import sys
 from datetime import datetime
 
 import pandas as pd
+import sklearn
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -112,7 +113,12 @@ def train_model(evidence, labels):
     Given a list of evidence lists and a list of labels, return a
     fitted k-nearest neighbor model (k=1) trained on the data.
     """
-    raise NotImplementedError
+    k = 1
+    X = evidence
+    y = labels
+    neigh = KNeighborsClassifier(n_neighbors=3)
+    neigh.fit(X, y)
+    return neigh
 
 
 def evaluate(labels, predictions):
@@ -130,7 +136,12 @@ def evaluate(labels, predictions):
     representing the "true negative rate": the proportion of
     actual negative labels that were accurately identified.
     """
-    raise NotImplementedError
+    report = sklearn.metrics.classification_report(labels, predictions, output_dict=True)
+    print("report:", report)
+    sensitivity = report['True']['recall']
+    specificity = report['False']['recall']
+
+    return sensitivity, specificity
 
 
 if __name__ == "__main__":
