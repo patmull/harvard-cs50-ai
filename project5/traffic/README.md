@@ -1,0 +1,1 @@
+Useful article tutorial: https://thedatafrog.com/en/articles/deep-learning-keras/
