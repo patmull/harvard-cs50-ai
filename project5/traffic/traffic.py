@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import tensorflow as tf
+import pickle
 from keras import Input, Model, Sequential
 from keras.src.layers import Dense, Conv3D, Conv2D, Dropout, MaxPooling2D, Rescaling, Flatten
 from keras.src.utils import np_utils
@@ -13,7 +14,7 @@ from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 
-EPOCHS = 20 # DEFAULT BY HW = 10
+EPOCHS = 10 # DEFAULT BY HW = 10
 IMG_WIDTH = 30
 IMG_HEIGHT = 30
 NUM_CATEGORIES = 43
@@ -37,13 +38,15 @@ def main():
         np.array(images), np.array(labels), test_size=TEST_SIZE
     )
 
-    """
-    Sometimes it is recommended, however have not provide any benefits...
-    x_train = x_train/255.0
-    x_test = x_test/255.0
-    y_train = y_train/255.0
-    y_test = y_test/255.0
-    """
+    x_train, x_val, y_train, y_val = train_test_split(
+        np.array(images), np.array(labels), test_size=TEST_SIZE
+    )
+
+    # Values needs to be normalized, otherwise very poor results
+    print("Before norm: ", x_train[:5])
+    x_train = x_train / 255.
+    print("After norm: ", x_train[:5])
+    x_test = x_test / 255.
 
     print("train shapes:")
     print(x_train.shape)
@@ -55,7 +58,8 @@ def main():
     model = get_model()
 
     # Fit model on training data
-    history = model.fit(x_train, y_train, epochs=EPOCHS)
+    history = model.fit(x_train, y_train, epochs=EPOCHS, batch_size=50,
+                        validation_split=0.2)
 
     # Evaluate neural network performance
     evaluation = model.evaluate(x_test, y_test, verbose=2)
@@ -68,6 +72,7 @@ def main():
         print(f"Model saved to {filename}.")
 
     plot_history(history)
+    plot_accuracy(history)
 
 
 def plot_history(history):
@@ -80,6 +85,21 @@ def plot_history(history):
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+
+
+def plot_accuracy(history, miny=None):
+    accuracy = history.history['accuracy'] # NOTE: Needs to correspond with the values specified in the metrics=[]
+    test_accuracy = history.history['val_accuracy']
+    print("accuracy: ", accuracy)
+    print("val_accuracy: ", test_accuracy)
+    epochs = range(len(accuracy))
+    plt.title('model accuracy')
+    plt.plot(epochs, accuracy)
+    plt.plot(epochs, test_accuracy)
+    if miny:
+        plt.ylim(miny, 1.0)
+    plt.figure()
     plt.show()
 
 
@@ -122,40 +142,57 @@ def load_data(data_dir):
     rgb_values = {}
     folder_name = 'gtsrb'
     print("Processing files...")
-    for i in range(0, NUM_CATEGORIES - 1):
-        folder_path = folder_name + os.sep + str(i)
-        all_files_in_dir = [f for f in os.listdir(folder_path)]
-        for file_name in all_files_in_dir:
-            img_path = os.path.join(folder_name, str(i), file_name)
-            img = cv2.imread(img_path)
-            # reduced_dims = reduce_dims(img)
-            # TODO: Create dict of frequencies
-            actual_image_values = list(itertools.chain.from_iterable(itertools.chain.from_iterable(img.tolist())))
-            for rgb_value in actual_image_values:
-                if rgb_value in rgb_values:
-                    rgb_values[rgb_value] += 1
+
+    saved_images_list = 'images.pkl'
+    saved_labels_list = 'labels.pkl'
+
+    if not os.path.exists(saved_images_list) or not os.path.exists(saved_labels_list):
+        print("Lists not presaved, computing anew and saving...")
+        for i in range(0, NUM_CATEGORIES - 1):
+            folder_path = folder_name + os.sep + str(i)
+            all_files_in_dir = [f for f in os.listdir(folder_path)]
+            for file_name in all_files_in_dir:
+                img_path = os.path.join(folder_name, str(i), file_name)
+                img = cv2.imread(img_path)
+                # reduced_dims = reduce_dims(img)
+                # TODO: Create dict of frequencies
+                actual_image_values = list(itertools.chain.from_iterable(itertools.chain.from_iterable(img.tolist())))
+                for rgb_value in actual_image_values:
+                    if rgb_value in rgb_values:
+                        rgb_values[rgb_value] += 1
+                    else:
+                        rgb_values[rgb_value] = 0
+                if img is None:
+                    print("Bad file path.")
                 else:
-                    rgb_values[rgb_value] = 0
-            if img is None:
-                print("Bad file path.")
-            else:
-                dim = (IMG_HEIGHT, IMG_WIDTH)
-                image_numpy = cv2.resize(img, dsize=dim)
-                images.append(image_numpy)
-                labels.append(i)
+                    dim = (IMG_HEIGHT, IMG_WIDTH)
+                    image_numpy = cv2.resize(img, dsize=dim)
+                    images.append(image_numpy)
+                    labels.append(i)
 
-    rgb_values_sorted = dict(sorted(rgb_values.items()))
+        rgb_values_sorted = dict(sorted(rgb_values.items()))
+        plt.xlabel('RGB value')
+        plt.ylabel('Frequency of the RGB value')
+        rgb_values = list(rgb_values_sorted.keys())
+        rgb_values_freqs = list(rgb_values_sorted.values())
+        print("rgb_values: ", rgb_values)
+        print("rgb_values: ", len(rgb_values))
+        print("rgb_values_freqs: ", rgb_values_freqs)
+        plt.bar(rgb_values, rgb_values_freqs)
+        plt.legend('RGB values of all loaded images: ')
+        plt.show()
 
-    plt.xlabel('RGB value')
-    plt.ylabel('Frequency of the RGB value')
-    rgb_values = list(rgb_values_sorted.keys())
-    rgb_values_freqs = list(rgb_values_sorted.values())
-    print("rgb_values: ", rgb_values)
-    print("rgb_values: ", len(rgb_values))
-    print("rgb_values_freqs: ", rgb_values_freqs)
-    plt.bar(rgb_values, rgb_values_freqs)
-    plt.legend('RGB values of all loaded images: ')
-    plt.show()
+        print("Saving...")
+        with open(saved_images_list, 'wb') as pickle_f:
+            pickle.dump(images, pickle_f)
+        with open(saved_labels_list, 'wb') as pickle_f:
+            pickle.dump(labels, pickle_f)
+    else:
+        print("Loading lists from saved pickle...")
+        with open(saved_images_list, 'rb') as f:
+            images = pickle.load(f)
+        with open(saved_labels_list, 'rb') as f:
+            labels = pickle.load(f)
 
     return images, labels
 
@@ -166,30 +203,44 @@ def get_model():
     `input_shape` of the first layer is `(IMG_WIDTH, IMG_HEIGHT, 3)`.
     The output layer should have `NUM_CATEGORIES` units, one for each category.
     """
+    # TODO: Try to make the Dense higher and lower. What happened?
+    # TODO:
+    # 1. Try to make the Dense higher and lower. What happened?
+    # 2. Try to use another Conv2D after MaxPooling
+    # 3. Try any more sophisticated method of normalization
+    # 4. Experiment inspired by: https://thedatafrog.com/en/articles/deep-learning-keras/
+    # 5. Does batches influence the results?
 
-    # Basic version:
+    # What about just one dimension for kernel site????
+    nn_model = Sequential([
+        # Rescaling(1. / 255, input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
+        Conv2D(NUM_CATEGORIES - 1, 12, activation='relu', input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
+        # OUT Shapes: IMG_HEIGHT - kernel_size + 1
+        # MaxPooling2D(pool_size=(2, 2)),
+        Flatten(),
+        Dense(100, activation='relu'),
+        Dropout(0.5),
+        # NOTICE: Must be set to NUM_CATEGORIES - 1 to match the num. of training instances
+        Dense(NUM_CATEGORIES - 1, activation='softmax'),
+    ])
+
+    print(nn_model.summary())
+
+    # Current best results. Use accuracy as the leading metric
+    # loss: 0.3751 - accuracy: 0.8868 - val_loss: 0.1780 - val_accuracy: 0.9559
     """
     nn_model = Sequential([
         # Rescaling(1. / 255, input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
-        Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
-        MaxPooling2D(pool_size=(2, 2)),
+        Conv2D(NUM_CATEGORIES - 1, 12, activation='relu', input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
+        # OUT Shapes: IMG_HEIGHT - kernel_size + 1
+        # MaxPooling2D(pool_size=(2, 2)),
         Flatten(),
-        Dense(20, activation='relu'),
+        Dense(100, activation='relu'),
         Dropout(0.5),
         # NOTICE: Must be set to NUM_CATEGORIES - 1 to match the num. of training instances
         Dense(NUM_CATEGORIES - 1, activation='softmax'),
     ])
     """
-    nn_model = Sequential([
-        # Rescaling(1. / 255, input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
-        Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
-        MaxPooling2D(pool_size=(2, 2)),
-        Flatten(),
-        Dense(20, activation='relu'),
-        Dropout(0.5),
-        # NOTICE: Must be set to NUM_CATEGORIES - 1 to match the num. of training instances
-        Dense(NUM_CATEGORIES - 1, activation='softmax'),
-    ])
 
     for layer in nn_model.layers:
         print("input shape: ", layer.input_shape)
