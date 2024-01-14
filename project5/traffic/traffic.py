@@ -207,19 +207,29 @@ def get_model():
     # TODO:
     # 1. Try to make the Dense higher and lower. What happened?
     # 2. Try to use another Conv2D after MaxPooling
+    # 3. What about smaller kernel_size with best performing model so far?
     # 3. Try any more sophisticated method of normalization
     # 4. Experiment inspired by: https://thedatafrog.com/en/articles/deep-learning-keras/
     # 5. Does batches influence the results?
+    # 6. Increase epochs.
 
     # What about just one dimension for kernel site????
+    # Rescaling(1. / 255, input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
+    # NOTICE: When is just 1 number specified in kernel_size=12 => (12,12)
+    # NOTICE: We need to lower the kernel size, otherwise we loose the dimansions during the training since first,
+    # there is a small reduction with the convolution and later, there is / pool_size after max_pooling, so for the
+    # Conv2D /w kernel_size=12 and default image size => 30 - 12 + 1 = 19
+    # after max pooling: 19/2 = 9, etc.
+    # See the model summary
     nn_model = Sequential([
-        # Rescaling(1. / 255, input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
-        Conv2D(NUM_CATEGORIES - 1, 12, activation='relu', input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
+        Conv2D(NUM_CATEGORIES - 1, 3, activation='relu', input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
         # OUT Shapes: IMG_HEIGHT - kernel_size + 1
-        # MaxPooling2D(pool_size=(2, 2)),
+        MaxPooling2D(pool_size=2),
+        Conv2D((NUM_CATEGORIES - 1)*2, 3, activation='relu'),
+        MaxPooling2D(pool_size=2),
         Flatten(),
-        Dense(100, activation='relu'),
-        Dropout(0.5),
+        Dense(300, activation='relu'),
+        Dropout(0.45),
         # NOTICE: Must be set to NUM_CATEGORIES - 1 to match the num. of training instances
         Dense(NUM_CATEGORIES - 1, activation='softmax'),
     ])
@@ -227,16 +237,17 @@ def get_model():
     print(nn_model.summary())
 
     # Current best results. Use accuracy as the leading metric
-    # loss: 0.3751 - accuracy: 0.8868 - val_loss: 0.1780 - val_accuracy: 0.9559
+    # loss: 0.0623 - accuracy: 0.9812 - val_loss: 0.0517 - val_accuracy: 0.9880
     """
     nn_model = Sequential([
-        # Rescaling(1. / 255, input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
-        Conv2D(NUM_CATEGORIES - 1, 12, activation='relu', input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
+        Conv2D(NUM_CATEGORIES - 1, 3, activation='relu', input_shape=(IMG_HEIGHT, IMG_HEIGHT, 3)),
         # OUT Shapes: IMG_HEIGHT - kernel_size + 1
-        # MaxPooling2D(pool_size=(2, 2)),
+        MaxPooling2D(pool_size=2),
+        Conv2D((NUM_CATEGORIES - 1)*2, 3, activation='relu'),
+        MaxPooling2D(pool_size=2),
         Flatten(),
-        Dense(100, activation='relu'),
-        Dropout(0.5),
+        Dense(300, activation='relu'),
+        Dropout(0.45),
         # NOTICE: Must be set to NUM_CATEGORIES - 1 to match the num. of training instances
         Dense(NUM_CATEGORIES - 1, activation='softmax'),
     ])
